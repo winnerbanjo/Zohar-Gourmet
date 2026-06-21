@@ -374,15 +374,7 @@ export default function Storefront({ onNavigateToAdmin }) {
             <li><a href="#menu" className="nav-link active">Our Menu</a></li>
             <li><a href="#about" className="nav-link">About Us</a></li>
             <li><a href="#contact" className="nav-link">Contact</a></li>
-            <li>
-              <button 
-                onClick={onNavigateToAdmin} 
-                className="nav-link"
-                style={{ background: 'none', border: 'none', font: 'inherit', cursor: 'pointer' }}
-              >
-                Admin Dashboard
-              </button>
-            </li>
+
           </ul>
 
           <div className="header-actions">
@@ -929,11 +921,7 @@ export default function Storefront({ onNavigateToAdmin }) {
 
         <div className="container footer-bottom">
           <p>© {new Date().getFullYear()} Zohar Gourmet. All rights reserved.</p>
-          <div style={{ display: 'flex', gap: '20px' }}>
-            <button onClick={onNavigateToAdmin} style={{ color: 'var(--color-accent)', fontWeight: 600 }}>
-              Staff Login Panel
-            </button>
-          </div>
+
         </div>
       </footer>
 
@@ -952,10 +940,7 @@ export default function Storefront({ onNavigateToAdmin }) {
           <span>Cart</span>
           {cart.length > 0 && <span className="mobile-nav-badge">{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>}
         </button>
-        <button className="mobile-nav-item" onClick={() => { playPopSound(); onNavigateToAdmin(); }}>
-          <span>⚙️</span>
-          <span>Admin</span>
-        </button>
+
       </nav>
     </div>
   );
