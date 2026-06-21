@@ -373,8 +373,8 @@ export default function Storefront({ onNavigateToAdmin }) {
           <ul className="nav-links">
             <li><a href="#menu" className="nav-link active">Our Menu</a></li>
             <li><a href="#about" className="nav-link">About Us</a></li>
+            <li><a href="#guide" className="nav-link">Guide & FAQs</a></li>
             <li><a href="#contact" className="nav-link">Contact</a></li>
-
           </ul>
 
           <div className="header-actions">
@@ -654,6 +654,73 @@ export default function Storefront({ onNavigateToAdmin }) {
         </div>
       </section>
 
+      {/* Gourmet Guide & FAQs (Docs Section) */}
+      <section id="guide" className="section">
+        <div className="container">
+          <div className="section-header">
+            <h2>Gourmet Guide & FAQs</h2>
+            <p>Everything you need to know about our premium probiotic yoghurts and delivery policies.</p>
+          </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '48px', marginTop: '20px' }}>
+            {/* Guide column */}
+            <div className="glass" style={{ padding: '32px', borderRadius: 'var(--border-radius-md)' }}>
+              <h3 style={{ fontSize: '20px', marginBottom: '16px', color: 'var(--color-primary-dark)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                🥛 Probiotic Yoghurt Guide
+              </h3>
+              <p style={{ fontSize: '14px', color: 'var(--color-gray-dark)', marginBottom: '16px' }}>
+                Not all yoghurts are created equal! Here is a simple comparison to help you choose the perfect base for your parfait cup:
+              </p>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div style={{ paddingBottom: '12px', borderBottom: '1px solid var(--color-gray-light)' }}>
+                  <h4 style={{ fontSize: '15px', color: 'var(--color-primary)' }}>Regular Probiotic Yoghurt</h4>
+                  <p style={{ fontSize: '13px', color: 'var(--color-gray-dark)' }}>
+                    Lighter in consistency, smooth, and naturally rich in active probiotic cultures. It has a mild, refreshing tang that pairs beautifully with crunchy granola and fresh grapes.
+                  </p>
+                </div>
+                <div>
+                  <h4 style={{ fontSize: '15px', color: 'var(--color-primary)' }}>Gourmet Greek Yoghurt</h4>
+                  <p style={{ fontSize: '13px', color: 'var(--color-gray-dark)' }}>
+                    Strained multiple times to remove excess whey, resulting in a thick, velvety texture. It is packed with double the protein, has lower lactose levels, and offers a luxurious, premium mouthfeel.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* FAQs column */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div>
+                <h4 style={{ fontSize: '16px', color: 'var(--color-primary-dark)', marginBottom: '6px' }}>
+                  🚀 How does the OPay + WhatsApp checkout work?
+                </h4>
+                <p style={{ fontSize: '14px', color: 'var(--color-gray-dark)' }}>
+                  Simply choose your treats, head to checkout, and note our OPay account details. Send the bank transfer, submit your order on our site, and click "Send Receipt". This opens a pre-filled WhatsApp message where you can attach your receipt screenshot!
+                </p>
+              </div>
+              
+              <div style={{ borderTop: '1px solid var(--color-gray-light)', paddingTop: '16px' }}>
+                <h4 style={{ fontSize: '16px', color: 'var(--color-primary-dark)', marginBottom: '6px' }}>
+                  📍 Where do you deliver within Umuahia?
+                </h4>
+                <p style={{ fontSize: '14px', color: 'var(--color-gray-dark)' }}>
+                  We offer swift delivery all across Umuahia, including Ify Jones Junction, Afara Majestic, and surrounding residential zones for a flat fee of ₦1,000. You can also pick up for free at our physical location.
+                </p>
+              </div>
+
+              <div style={{ borderTop: '1px solid var(--color-gray-light)', paddingTop: '16px' }}>
+                <h4 style={{ fontSize: '16px', color: 'var(--color-primary-dark)', marginBottom: '6px' }}>
+                  🎉 Do you support bulk orders or party catering?
+                </h4>
+                <p style={{ fontSize: '14px', color: 'var(--color-gray-dark)' }}>
+                  Yes! We cater for birthdays, weddings, school programs, and corporate events. We offer bulk pricing on our 6-packs and 12-packs. Message us directly on WhatsApp to get a custom quote.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Sliding Sidebar Cart Drawer */}
       <div className={`cart-drawer-overlay ${isCartOpen ? 'open' : ''}`} onClick={() => setIsCartOpen(false)}>
         <div className="cart-drawer" onClick={(e) => e.stopPropagation()}>
@@ -895,8 +962,12 @@ export default function Storefront({ onNavigateToAdmin }) {
             <h3>Zohar Gourmet</h3>
             <p>Premium handcrafted parfait cups, natural probiotic yoghurts, and delicious golden waffles.</p>
             <div className="social-links">
-              <a href="https://instagram.com/Zohar_gourmet" target="_blank" rel="noreferrer" className="social-link">📸</a>
-              <a href="https://tiktok.com/@Zohar.gourmet" target="_blank" rel="noreferrer" className="social-link">🎵</a>
+              <a href="https://instagram.com/Zohar_gourmet" target="_blank" rel="noreferrer" className="social-link" title="Instagram">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
+              </a>
+              <a href="https://tiktok.com/@Zohar.gourmet" target="_blank" rel="noreferrer" className="social-link" title="TikTok">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 448 512" style={{ transform: 'translateY(-1px)' }}><path d="M448,209.91a210.06,210.06,0,0,1-122-37.89V349.38A162.55,162.55,0,1,1,185,188.38v86.88a75.66,75.66,0,1,0,76,74.12V0h86.88a104.84,104.84,0,0,0,100.12,100.12Z"/></svg>
+              </a>
             </div>
           </div>
 
