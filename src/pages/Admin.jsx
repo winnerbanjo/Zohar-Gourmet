@@ -2,20 +2,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import { database } from '../utils/database';
 import { 
   Lock, 
-  TrendingUp, 
   ShoppingBag, 
-  Users, 
   Settings, 
   Package, 
-  DollarSign,
-  Check,
-  X,
   Volume2,
-  Trash2,
   Phone,
-  Clock,
   LogOut,
-  BellRing
+  BellRing,
+  Eye,
+  X
 } from 'lucide-react';
 
 export default function Admin({ onNavigateToStorefront }) {
@@ -36,6 +31,9 @@ export default function Admin({ onNavigateToStorefront }) {
   // Audio state
   const [audioEnabled, setAudioEnabled] = useState(false);
   const prevOrdersCount = useRef(0);
+
+  // Modal view for payment screenshots
+  const [selectedReceipt, setSelectedReceipt] = useState(null);
 
   // Form states for settings
   const [whatsapp1, setWhatsapp1] = useState('');
@@ -71,11 +69,10 @@ export default function Admin({ onNavigateToStorefront }) {
     setSaturdayStart(currentSettings.openHours.saturday.start);
     setSaturdayEnd(currentSettings.openHours.saturday.end);
 
-    // If orders count increases and audio is enabled, play chime!
+    // Play chime on new order
     if (prevOrdersCount.current > 0 && currentOrders.length > prevOrdersCount.current) {
       if (audioEnabled) {
         playOrderChime();
-        // Visual alert or toast could be added here
       }
     }
     prevOrdersCount.current = currentOrders.length;
@@ -104,7 +101,6 @@ export default function Admin({ onNavigateToStorefront }) {
       if (!AudioContext) return;
       const ctx = new AudioContext();
       
-      // First chime (Note E5)
       const osc1 = ctx.createOscillator();
       const gain1 = ctx.createGain();
       osc1.connect(gain1);
@@ -117,7 +113,6 @@ export default function Admin({ onNavigateToStorefront }) {
       osc1.start(ctx.currentTime);
       osc1.stop(ctx.currentTime + 0.4);
 
-      // Second chime (Note A5, slightly delayed)
       const osc2 = ctx.createOscillator();
       const gain2 = ctx.createGain();
       osc2.connect(gain2);
@@ -130,7 +125,7 @@ export default function Admin({ onNavigateToStorefront }) {
       osc2.start(ctx.currentTime + 0.12);
       osc2.stop(ctx.currentTime + 0.55);
     } catch (e) {
-      console.warn('Web Audio Playback blocked by browser policy until user click', e);
+      console.warn('Web Audio blocked', e);
     }
   };
 
@@ -140,7 +135,6 @@ export default function Admin({ onNavigateToStorefront }) {
       setIsAuthenticated(true);
       sessionStorage.setItem('zohar_admin_authed', 'true');
       setAuthError('');
-      // Auto-trigger audio context activation
       setAudioEnabled(true);
       setTimeout(playOrderChime, 100);
     } else {
@@ -153,12 +147,10 @@ export default function Admin({ onNavigateToStorefront }) {
     sessionStorage.removeItem('zohar_admin_authed');
   };
 
-  // Toggle order state
   const handleUpdateStatus = (orderId, newStatus) => {
     database.updateOrderStatus(orderId, newStatus);
   };
 
-  // Toggle inventory
   const handleToggleProduct = (id) => {
     database.toggleProductStock(id);
   };
@@ -167,7 +159,6 @@ export default function Admin({ onNavigateToStorefront }) {
     database.toggleToppingStock(id);
   };
 
-  // Save admin settings
   const handleSaveSettings = (e) => {
     e.preventDefault();
     const updatedSettings = {
@@ -186,15 +177,13 @@ export default function Admin({ onNavigateToStorefront }) {
     alert('Store configurations saved successfully!');
   };
 
-  // Enable audio system manually
   const enableAudioFeedback = () => {
     setAudioEnabled(true);
     playOrderChime();
   };
 
-  // Statistics Calculations
   const completedOrders = orders.filter(o => o.status === 'Completed');
-  const activeOrdersList = orders.filter(o => o.status === 'Pending' || o.status === 'Preparing');
+  const activeOrdersList = orders.filter(o => o.status !== 'Completed' && o.status !== 'Cancelled');
   const totalRevenue = completedOrders.reduce((sum, o) => sum + o.total, 0);
 
   if (!isAuthenticated) {
@@ -275,7 +264,6 @@ export default function Admin({ onNavigateToStorefront }) {
           </li>
         </ul>
 
-        {/* Audio Ring Switch */}
         <div style={{ marginTop: 'auto', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
           {audioEnabled ? (
             <div className="chime-indicator">
@@ -312,7 +300,6 @@ export default function Admin({ onNavigateToStorefront }) {
 
       {/* Main Panel Content Area */}
       <main className="admin-content">
-        {/* Header bar */}
         <div className="admin-header-row">
           <div>
             <h1 style={{ fontSize: '28px' }}>
@@ -336,7 +323,6 @@ export default function Admin({ onNavigateToStorefront }) {
           )}
         </div>
 
-        {/* Dashboard Analytics Widgets (Only on Orders/Home) */}
         {activeTab === 'orders' && (
           <div className="admin-stats-grid">
             <div className="stat-card">
@@ -344,11 +330,11 @@ export default function Admin({ onNavigateToStorefront }) {
               <div className="stat-value">₦{totalRevenue.toLocaleString()}</div>
             </div>
             <div className="stat-card accent">
-              <div className="stat-label">Pending / Preparing</div>
+              <div className="stat-label">Active Orders</div>
               <div className="stat-value">{activeOrdersList.length} Orders</div>
             </div>
             <div className="stat-card secondary">
-              <div className="stat-label">Completed Orders</div>
+              <div className="stat-label">Completed Sales</div>
               <div className="stat-value">{completedOrders.length} Sales</div>
             </div>
           </div>
@@ -372,6 +358,7 @@ export default function Admin({ onNavigateToStorefront }) {
                       <th>Customer Details</th>
                       <th>Delivery Type</th>
                       <th>Ordered Items</th>
+                      <th>Receipt Screenshot</th>
                       <th>Total Amount</th>
                       <th>Status Badge</th>
                       <th>Control Actions</th>
@@ -400,7 +387,7 @@ export default function Admin({ onNavigateToStorefront }) {
                             <div>{order.deliveryMethod === 'delivery' ? '🚀 Delivery' : '🏪 Pickup'}</div>
                             {order.deliveryMethod === 'delivery' && (
                               <div style={{ fontSize: '11px', color: 'var(--color-gray-dark)', maxWidth: '160px', marginTop: '4px' }}>
-                                📍 {order.deliveryAddress}
+                                {order.deliveryAddress}
                               </div>
                             )}
                           </td>
@@ -423,6 +410,21 @@ export default function Admin({ onNavigateToStorefront }) {
                               </div>
                             )}
                           </td>
+                          <td>
+                            {/* Receipt Proof Screenshot Button */}
+                            {order.receiptImage ? (
+                              <button 
+                                type="button" 
+                                className="btn btn-outline" 
+                                onClick={() => setSelectedReceipt(order.receiptImage)}
+                                style={{ padding: '6px 10px', fontSize: '11px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                              >
+                                <Eye size={12} /> View Receipt
+                              </button>
+                            ) : (
+                              <span style={{ fontSize: '12px', color: 'var(--color-gray-medium)', fontStyle: 'italic' }}>No Receipt</span>
+                            )}
+                          </td>
                           <td style={{ fontWeight: 700, color: 'var(--color-primary-dark)' }}>
                             ₦{order.total.toLocaleString()}
                           </td>
@@ -432,8 +434,18 @@ export default function Admin({ onNavigateToStorefront }) {
                             </span>
                           </td>
                           <td>
+                            {/* Upgraded linear status transitions flow */}
                             <div style={{ display: 'flex', gap: '6px', flexDirection: 'column' }}>
                               {order.status === 'Pending' && (
+                                <button 
+                                  className="btn"
+                                  onClick={() => handleUpdateStatus(order.id, 'Confirmed')}
+                                  style={{ padding: '6px 12px', fontSize: '11px', borderRadius: '4px', backgroundColor: 'var(--color-accent)', color: 'var(--color-primary-dark)', fontWeight: 700 }}
+                                >
+                                  Confirm Payment ✓
+                                </button>
+                              )}
+                              {order.status === 'Confirmed' && (
                                 <button 
                                   className="btn btn-primary"
                                   onClick={() => handleUpdateStatus(order.id, 'Preparing')}
@@ -442,22 +454,22 @@ export default function Admin({ onNavigateToStorefront }) {
                                   Start Preparing 🍳
                                 </button>
                               )}
-                              {(order.status === 'Preparing' || order.status === 'Out for Delivery') && (
+                              {order.status === 'Preparing' && (
+                                <button 
+                                  className="btn"
+                                  onClick={() => handleUpdateStatus(order.id, 'Ready')}
+                                  style={{ padding: '6px 12px', fontSize: '11px', borderRadius: '4px', backgroundColor: 'var(--color-secondary)', color: 'white', fontWeight: 700 }}
+                                >
+                                  Mark Ready 🚀
+                                </button>
+                              )}
+                              {order.status === 'Ready' && (
                                 <button 
                                   className="btn"
                                   onClick={() => handleUpdateStatus(order.id, 'Completed')}
-                                  style={{ padding: '6px 12px', fontSize: '11px', borderRadius: '4px', backgroundColor: 'var(--color-secondary)', color: 'white' }}
+                                  style={{ padding: '6px 12px', fontSize: '11px', borderRadius: '4px', backgroundColor: 'var(--color-primary)', color: 'white', fontWeight: 700 }}
                                 >
                                   Mark Completed ✓
-                                </button>
-                              )}
-                              {order.status === 'Preparing' && order.deliveryMethod === 'delivery' && (
-                                <button 
-                                  className="btn btn-outline"
-                                  onClick={() => handleUpdateStatus(order.id, 'Out for Delivery')}
-                                  style={{ padding: '6px 12px', fontSize: '11px', borderRadius: '4px', borderColor: 'var(--color-secondary)', color: 'var(--color-secondary)' }}
-                                >
-                                  Dispatch Courier 🚀
                                 </button>
                               )}
                               
@@ -486,7 +498,6 @@ export default function Admin({ onNavigateToStorefront }) {
         {activeTab === 'inventory' && (
           <div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
-              {/* Product Inventory */}
               <div>
                 <h3 style={{ fontSize: '18px', marginBottom: '16px', borderBottom: '2px solid var(--color-primary-light)', paddingBottom: '8px' }}>
                   Menu Items Stock
@@ -513,7 +524,6 @@ export default function Admin({ onNavigateToStorefront }) {
                 </div>
               </div>
 
-              {/* Topping Inventory */}
               <div>
                 <h3 style={{ fontSize: '18px', marginBottom: '16px', borderBottom: '2px solid var(--color-primary-light)', paddingBottom: '8px' }}>
                   Custom Parfait Toppings
@@ -671,6 +681,27 @@ export default function Admin({ onNavigateToStorefront }) {
           </div>
         )}
       </main>
+
+      {/* MODAL OVERLAY: FULL-SCREEN RECEIPT SCREENSHOT VIEWER */}
+      {selectedReceipt && (
+        <div className="modal-overlay" onClick={() => setSelectedReceipt(null)} style={{ zIndex: 99999 }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px', padding: '10px' }}>
+            <div className="modal-header" style={{ borderBottom: 'none', padding: '12px 16px' }}>
+              <h4 style={{ fontSize: '16px' }}>Payment Receipt Proof</h4>
+              <button className="modal-close" onClick={() => setSelectedReceipt(null)}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="modal-body" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#f5f5f5', borderRadius: '12px', overflow: 'hidden', padding: '10px' }}>
+              <img 
+                src={selectedReceipt} 
+                alt="OPay Payment Proof Screenshot" 
+                style={{ maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain', borderRadius: '8px', border: '1px solid var(--color-gray-medium)' }} 
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -26,7 +26,7 @@ const INITIAL_PRODUCTS = [
   },
   {
     id: 'parfait-330',
-    name: 'Classic Parfait (330ml)',
+    name: 'Mini Nutty (330ml)', // Renamed from Classic Parfait
     category: 'parfaits',
     description: 'Perfect portion size of yogurt, apple, granola, coconut flakes, cashew nut, almond nut, and grapes.',
     priceRegular: 3000,
@@ -71,20 +71,29 @@ const INITIAL_PRODUCTS = [
     inStock: true
   },
   {
-    id: 'waffle-single',
-    name: 'Single Golden Waffle',
+    id: 'waffle-single-honey',
+    name: 'Single Waffle + Honey',
     category: 'waffles',
-    description: 'Freshly baked golden waffle served with premium chocolate syrup or maple glaze.',
-    price: 1500,
+    description: 'Freshly baked golden waffle served with premium natural honey.',
+    price: 1700,
     image: '/waffles.jpg', // Client waffles stack
     inStock: true
   },
   {
-    id: 'waffle-double',
-    name: 'Double Waffle Stack',
+    id: 'waffle-double-honey',
+    name: 'Double Waffles + Honey',
     category: 'waffles',
-    description: 'Two stacks of our signature golden waffles with syrup, granola, and sliced grapes.',
-    price: 2800,
+    description: 'Two stacks of our signature golden waffles served with natural honey.',
+    price: 3000,
+    image: '/waffles.jpg', // Client waffles stack
+    inStock: true
+  },
+  {
+    id: 'waffle-double-honey-apples',
+    name: 'Double Waffles + Honey + Apples',
+    category: 'waffles',
+    description: 'Two stacks of our signature golden waffles served with natural honey and fresh apple slices.',
+    price: 3500,
     image: '/waffles.jpg', // Client waffles stack
     inStock: true
   }
@@ -105,37 +114,80 @@ const DEFAULT_SETTINGS = {
   whatsapp1: '+2348121040943',
   whatsapp2: '+2348086674676',
   opayNumber: '8121040943',
-  opayName: 'ZOHAR GOURMET',
+  opayName: 'Atuma Shalom Chiamaka', // Updated to client's name
   opayBank: 'OPay',
   address: 'Ify Jones Junction, Afara Majestic, Umuahia, Abia State',
   openHours: {
-    weekdays: { start: '09:00', end: '17:00' }, // Mon-Fri 9am - 5pm
-    saturday: { start: '12:00', end: '17:00' }  // Sat 12pm - 5pm
+    weekdays: { start: '09:00', end: '17:00' },
+    saturday: { start: '12:00', end: '17:00' }
   }
 };
 
-// Initial Database Seeding
+// Initial Database Seeding with automatic schema & name syncing
 const initDB = () => {
   const storedProducts = localStorage.getItem('zohar_products');
   if (!storedProducts) {
     localStorage.setItem('zohar_products', JSON.stringify(INITIAL_PRODUCTS));
   } else {
-    // Migration: Update image paths to local copied assets if they are Unsplash
     try {
-      const parsed = JSON.parse(storedProducts);
+      let parsed = JSON.parse(storedProducts);
       let updated = false;
-      parsed.forEach(p => {
+
+      // Update details/names/prices of existing items from code schema
+      parsed = parsed.map(p => {
         const matchingInitial = INITIAL_PRODUCTS.find(i => i.id === p.id);
-        if (matchingInitial && (p.image.includes('unsplash.com') || p.image !== matchingInitial.image)) {
-          p.image = matchingInitial.image;
+        if (matchingInitial) {
+          // Check if name, description, category, or prices changed
+          if (p.name !== matchingInitial.name || 
+              p.price !== matchingInitial.price ||
+              p.priceRegular !== matchingInitial.priceRegular ||
+              p.priceGreek !== matchingInitial.priceGreek ||
+              p.description !== matchingInitial.description ||
+              p.image !== matchingInitial.image) {
+            updated = true;
+            return { ...p, ...matchingInitial };
+          }
+        }
+        return p;
+      });
+
+      // Filter out products that were removed in the code (e.g. old waffles)
+      const initialIds = INITIAL_PRODUCTS.map(i => i.id);
+      const filteredParsed = parsed.filter(p => {
+        const keep = initialIds.includes(p.id);
+        if (!keep) updated = true;
+        return keep;
+      });
+
+      // Add any new products added in code (e.g. double waffle + honey + apples)
+      INITIAL_PRODUCTS.forEach(initialProd => {
+        if (!filteredParsed.some(p => p.id === initialProd.id)) {
+          filteredParsed.push(initialProd);
           updated = true;
         }
       });
+
       if (updated) {
-        localStorage.setItem('zohar_products', JSON.stringify(parsed));
+        localStorage.setItem('zohar_products', JSON.stringify(filteredParsed));
       }
     } catch (e) {
       localStorage.setItem('zohar_products', JSON.stringify(INITIAL_PRODUCTS));
+    }
+  }
+
+  // Force settings update to migrate OPay name to "Atuma Shalom Chiamaka"
+  const storedSettings = localStorage.getItem('zohar_settings');
+  if (!storedSettings) {
+    localStorage.setItem('zohar_settings', JSON.stringify(DEFAULT_SETTINGS));
+  } else {
+    try {
+      const parsedSettings = JSON.parse(storedSettings);
+      if (parsedSettings.opayName !== DEFAULT_SETTINGS.opayName) {
+        parsedSettings.opayName = DEFAULT_SETTINGS.opayName;
+        localStorage.setItem('zohar_settings', JSON.stringify(parsedSettings));
+      }
+    } catch(e) {
+      localStorage.setItem('zohar_settings', JSON.stringify(DEFAULT_SETTINGS));
     }
   }
 
