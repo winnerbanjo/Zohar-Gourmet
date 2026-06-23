@@ -142,6 +142,7 @@ export default function Storefront({ onNavigateToAdmin }) {
   const [notes, setNotes] = useState('');
   const [receiptBase64, setReceiptBase64] = useState('');
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
+  const [showDeliveryFeesList, setShowDeliveryFeesList] = useState(false);
 
   // Store settings
   const [isStoreOpen, setIsStoreOpen] = useState(true);
@@ -641,39 +642,6 @@ export default function Storefront({ onNavigateToAdmin }) {
                   </div>
                 </div>
               </div>
-            </div>
-          </section>
-
-          {/* Delivery Fees */}
-          <section id="delivery" className="section">
-            <div className="container">
-              <h2 className="section-title">Delivery Fees</h2>
-              <table className="delivery-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr>
-                    <th style={{ textAlign: 'left', borderBottom: '2px solid var(--color-gray-medium)' }}>Location</th>
-                    <th style={{ textAlign: 'right', borderBottom: '2px solid var(--color-gray-medium)' }}>Fee (₦)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr><td>Town</td><td style={{ textAlign: 'right' }}>1,300</td></tr>
-                  <tr><td>Bende road</td><td style={{ textAlign: 'right' }}>1,400</td></tr>
-                  <tr><td>Isieke / okwuta</td><td style={{ textAlign: 'right' }}>1,600</td></tr>
-                  <tr><td>World bank, low-cost</td><td style={{ textAlign: 'right' }}>1,500</td></tr>
-                  <tr><td>Agbama</td><td style={{ textAlign: 'right' }}>1,600</td></tr>
-                  <tr><td>Olokoro</td><td style={{ textAlign: 'right' }}>2,300</td></tr>
-                  <tr><td>Umudike</td><td style={{ textAlign: 'right' }}>2,900</td></tr>
-                  <tr><td>Ubakala</td><td style={{ textAlign: 'right' }}>3,000</td></tr>
-                  <tr><td>Amachara</td><td style={{ textAlign: 'right' }}>3,000</td></tr>
-                  <tr><td>Amakama</td><td style={{ textAlign: 'right' }}>2,300</td></tr>
-                  <tr><td>Nkwoegwu</td><td style={{ textAlign: 'right' }}>3,500</td></tr>
-                  <tr><td>Ehimiri / dozieway / winners road</td><td style={{ textAlign: 'right' }}>1,600</td></tr>
-                  <tr><td>Ahiaeke</td><td style={{ textAlign: 'right' }}>1,700</td></tr>
-                  <tr><td>Timber</td><td style={{ textAlign: 'right' }}>2,200</td></tr>
-                  <tr><td>Govt college</td><td style={{ textAlign: 'right' }}>2,200</td></tr>
-                  <tr><td>Old Umuahia</td><td style={{ textAlign: 'right' }}>1,700</td></tr>
-                </tbody>
-              </table>
             </div>
           </section>
 
@@ -1177,6 +1145,55 @@ export default function Storefront({ onNavigateToAdmin }) {
                           </option>
                         ))}
                       </select>
+                    </div>
+
+                    <div style={{ marginBottom: '16px' }}>
+                      <button 
+                        type="button" 
+                        onClick={() => setShowDeliveryFeesList(!showDeliveryFeesList)}
+                        style={{ 
+                          background: 'none', 
+                          border: 'none', 
+                          color: 'var(--color-accent)', 
+                          cursor: 'pointer', 
+                          fontSize: '13px', 
+                          fontWeight: 600,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: 0
+                        }}
+                      >
+                        <Info size={14} /> {showDeliveryFeesList ? 'Hide Delivery Fees' : 'View all delivery fees'}
+                      </button>
+                      {showDeliveryFeesList && (
+                        <div style={{ 
+                          marginTop: '10px', 
+                          maxHeight: '180px', 
+                          overflowY: 'auto', 
+                          border: '1px solid var(--color-gray-medium)', 
+                          borderRadius: '8px', 
+                          padding: '12px',
+                          backgroundColor: 'rgba(255, 255, 255, 0.05)'
+                        }}>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                            <thead>
+                              <tr style={{ borderBottom: '1px solid var(--color-gray-medium)' }}>
+                                <th style={{ textAlign: 'left', paddingBottom: '6px', color: 'var(--color-primary-light)' }}>Location</th>
+                                <th style={{ textAlign: 'right', paddingBottom: '6px', color: 'var(--color-primary-light)' }}>Fee</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {DELIVERY_LOCATIONS.map((loc, idx) => (
+                                <tr key={idx} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                                  <td style={{ padding: '6px 0', color: 'var(--color-primary-light)' }}>{loc.name}</td>
+                                  <td style={{ textAlign: 'right', padding: '6px 0', color: 'var(--color-accent)', fontWeight: 600 }}>₦{loc.fee.toLocaleString()}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
                     </div>
 
                     <div className="form-group">
