@@ -457,7 +457,7 @@ export default function Storefront({ onNavigateToAdmin }) {
       <header className="header glass">
         <div className="container header-container">
           <a href="#" className="logo-link" onClick={handleBackToStorefront}>
-            <span className="logo-emoji">🍦</span>
+            <img src="/logo.jpg" alt="Zohar Gourmet" style={{ height: '36px', width: '36px', borderRadius: '50%', objectFit: 'cover' }} />
             <span>Zohar<span className="logo-gold">Gourmet</span></span>
           </a>
           

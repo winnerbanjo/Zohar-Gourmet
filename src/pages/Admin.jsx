@@ -230,8 +230,8 @@ export default function Admin({ onNavigateToStorefront }) {
     <div className="admin-layout">
       {/* Sidebar Navigation */}
       <aside className="admin-sidebar">
-        <div className="admin-logo">
-          🍦 Zohar Admin
+        <div className="admin-logo" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <img src="/logo.jpg" alt="Logo" style={{ height: '30px', width: '30px', borderRadius: '50%', objectFit: 'cover' }} /> Zohar Admin
         </div>
 
         <ul className="admin-nav">
