@@ -331,6 +331,22 @@ export const database = {
       saturday: `Saturday: ${formatTime(settings.openHours.saturday.start)} - ${formatTime(settings.openHours.saturday.end)}`,
       sunday: 'Sunday: Closed'
     };
+  },
+
+  // Clear all order history
+  clearAllOrders: () => {
+    localStorage.setItem('zohar_orders', JSON.stringify([]));
+    broadcastUpdate();
+  },
+
+  // Reset all settings and inventory to defaults
+  resetDatabase: () => {
+    localStorage.removeItem('zohar_products');
+    localStorage.removeItem('zohar_toppings');
+    localStorage.removeItem('zohar_settings');
+    localStorage.removeItem('zohar_orders');
+    initDB();
+    broadcastUpdate();
   }
 };
 

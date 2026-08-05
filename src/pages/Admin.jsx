@@ -177,6 +177,20 @@ export default function Admin({ onNavigateToStorefront }) {
     alert('Store configurations saved successfully!');
   };
 
+  const handleClearOrders = () => {
+    if (window.confirm("Are you sure you want to delete ALL order history? This cannot be undone.")) {
+      database.clearAllOrders();
+      alert("All order history cleared!");
+    }
+  };
+
+  const handleResetDatabase = () => {
+    if (window.confirm("Are you sure you want to reset ALL configurations, settings, and stock levels to defaults? This will clear all data.")) {
+      database.resetDatabase();
+      window.location.reload();
+    }
+  };
+
   const enableAudioFeedback = () => {
     setAudioEnabled(true);
     playOrderChime();
@@ -678,6 +692,34 @@ export default function Admin({ onNavigateToStorefront }) {
                 Save Store Settings overrides
               </button>
             </form>
+
+            <div style={{ marginTop: '36px', borderTop: '2px dashed #ff6b6b', paddingTop: '24px' }}>
+              <h3 style={{ fontSize: '18px', color: '#ff6b6b', marginBottom: '8px' }}>
+                Danger Zone (Handover & Reset)
+              </h3>
+              <p style={{ fontSize: '13px', color: 'var(--color-gray-dark)', marginBottom: '16px' }}>
+                Use these buttons to wipe demo/test data before handing the application over to the client.
+              </p>
+              
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                <button 
+                  type="button" 
+                  onClick={handleClearOrders}
+                  className="btn"
+                  style={{ backgroundColor: '#ff6b6b', color: 'white', fontSize: '13px', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}
+                >
+                  Clear All Order History 🗑️
+                </button>
+                <button 
+                  type="button" 
+                  onClick={handleResetDatabase}
+                  className="btn btn-outline"
+                  style={{ borderColor: '#ff6b6b', color: '#ff6b6b', fontSize: '13px', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}
+                >
+                  Reset Settings & Stock to Defaults 🔄
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </main>
