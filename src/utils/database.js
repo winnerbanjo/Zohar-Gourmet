@@ -240,6 +240,28 @@ export const database = {
     }
   },
 
+  // Add a new product to catalog
+  addProduct: (productData) => {
+    const products = database.getProducts();
+    const newProduct = {
+      id: 'prod-' + Date.now(),
+      inStock: true,
+      ...productData
+    };
+    products.push(newProduct);
+    localStorage.setItem('zohar_products', JSON.stringify(products));
+    broadcastUpdate();
+    return newProduct;
+  },
+
+  // Delete product from catalog
+  deleteProduct: (id) => {
+    const products = database.getProducts();
+    const filtered = products.filter(p => p.id !== id);
+    localStorage.setItem('zohar_products', JSON.stringify(filtered));
+    broadcastUpdate();
+  },
+
   // Get all toppings
   getToppings: () => {
     return JSON.parse(localStorage.getItem('zohar_toppings')) || INITIAL_TOPPINGS;

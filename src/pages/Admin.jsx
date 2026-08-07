@@ -47,6 +47,21 @@ export default function Admin({ onNavigateToStorefront }) {
   const [saturdayStart, setSaturdayStart] = useState('12:00');
   const [saturdayEnd, setSaturdayEnd] = useState('17:00');
 
+  // Product edit/add states
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [formName, setFormName] = useState('');
+  const [formCategory, setFormCategory] = useState('parfaits');
+  const [formDescription, setFormDescription] = useState('');
+  const [formImage, setFormImage] = useState('');
+  const [formPrice, setFormPrice] = useState(0);
+  const [formPriceRegular, setFormPriceRegular] = useState(0);
+  const [formPriceGreek, setFormPriceGreek] = useState(0);
+  const [formPack6Price, setFormPack6Price] = useState(0);
+  const [formPack12Price, setFormPack12Price] = useState(0);
+  const [formHasBaseOptions, setFormHasBaseOptions] = useState(false);
+  const [formHasPackOptions, setFormHasPackOptions] = useState(false);
+
   // Load database values
   const loadAdminData = () => {
     const currentOrders = database.getOrders();
@@ -188,6 +203,71 @@ export default function Admin({ onNavigateToStorefront }) {
     if (window.confirm("Are you sure you want to reset ALL configurations, settings, and stock levels to defaults? This will clear all data.")) {
       database.resetDatabase();
       window.location.reload();
+    }
+  };
+
+  const handleOpenEditProduct = (product) => {
+    setEditingProduct(product);
+    setFormName(product.name || '');
+    setFormCategory(product.category || 'parfaits');
+    setFormDescription(product.description || '');
+    setFormImage(product.image || '');
+    setFormPrice(product.price || 0);
+    setFormPriceRegular(product.priceRegular || 0);
+    setFormPriceGreek(product.priceGreek || 0);
+    setFormPack6Price(product.pack6Price || 0);
+    setFormPack12Price(product.pack12Price || 0);
+    setFormHasBaseOptions(product.hasBaseOptions || false);
+    setFormHasPackOptions(product.hasPackOptions || false);
+    setIsProductModalOpen(true);
+  };
+
+  const handleOpenAddProduct = () => {
+    setEditingProduct(null);
+    setFormName('');
+    setFormCategory('parfaits');
+    setFormDescription('');
+    setFormImage('/parfait_cup.jpg');
+    setFormPrice(1000);
+    setFormPriceRegular(1000);
+    setFormPriceGreek(1500);
+    setFormPack6Price(5000);
+    setFormPack12Price(10000);
+    setFormHasBaseOptions(false);
+    setFormHasPackOptions(false);
+    setIsProductModalOpen(true);
+  };
+
+  const handleProductFormSubmit = (e) => {
+    e.preventDefault();
+    const productData = {
+      name: formName,
+      category: formCategory,
+      description: formDescription,
+      image: formImage,
+      price: Number(formPrice),
+      priceRegular: Number(formPriceRegular),
+      priceGreek: Number(formPriceGreek),
+      pack6Price: Number(formPack6Price),
+      pack12Price: Number(formPack12Price),
+      hasBaseOptions: formHasBaseOptions,
+      hasPackOptions: formHasPackOptions
+    };
+
+    if (editingProduct) {
+      database.updateProduct({ id: editingProduct.id, ...productData });
+      alert('Product updated successfully!');
+    } else {
+      database.addProduct(productData);
+      alert('Product added successfully!');
+    }
+    setIsProductModalOpen(false);
+  };
+
+  const handleDeleteProduct = (id) => {
+    if (window.confirm('Are you sure you want to delete this product?')) {
+      database.deleteProduct(id);
+      alert('Product deleted successfully!');
     }
   };
 
@@ -513,26 +593,56 @@ export default function Admin({ onNavigateToStorefront }) {
           <div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
               <div>
-                <h3 style={{ fontSize: '18px', marginBottom: '16px', borderBottom: '2px solid var(--color-primary-light)', paddingBottom: '8px' }}>
-                  Menu Items Stock
-                </h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '2px solid var(--color-primary-light)', paddingBottom: '8px' }}>
+                  <h3 style={{ fontSize: '18px', margin: 0 }}>
+                    Menu Items Stock & Customization
+                  </h3>
+                  <button 
+                    onClick={handleOpenAddProduct} 
+                    className="btn btn-accent btn-sm"
+                    style={{ fontSize: '12px', padding: '6px 12px', height: 'auto', width: 'auto' }}
+                  >
+                    Add Menu Item ➕
+                  </button>
+                </div>
                 <div className="inventory-list">
                   {products.map(product => (
-                    <div key={product.id} className="inventory-item">
-                      <div className="inventory-info">
-                        <h4>{product.name}</h4>
-                        <p style={{ fontWeight: 600, color: 'var(--color-primary)' }}>
+                    <div key={product.id} className="inventory-item" style={{ flexWrap: 'wrap', gap: '10px' }}>
+                      <div className="inventory-info" style={{ minWidth: '150px' }}>
+                        <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <img src={product.image} alt="" style={{ width: '28px', height: '28px', borderRadius: '4px', objectFit: 'cover', border: '1px solid var(--color-gray-medium)' }} />
+                          {product.name}
+                        </h4>
+                        <p style={{ fontWeight: 600, color: 'var(--color-primary)', fontSize: '11px' }}>
                           {product.category.toUpperCase()}
                         </p>
                       </div>
-                      <label className="switch">
-                        <input 
-                          type="checkbox" 
-                          checked={product.inStock} 
-                          onChange={() => handleToggleProduct(product.id)}
-                        />
-                        <span className="slider"></span>
-                      </label>
+                      
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: 'auto' }}>
+                        <button 
+                          className="btn btn-outline" 
+                          onClick={() => handleOpenEditProduct(product)}
+                          style={{ padding: '4px 10px', fontSize: '11px', borderRadius: '6px' }}
+                        >
+                          Edit ✏️
+                        </button>
+                        <button 
+                          className="btn btn-text" 
+                          onClick={() => handleDeleteProduct(product.id)}
+                          style={{ padding: '4px 10px', fontSize: '11px', color: 'var(--color-danger)' }}
+                        >
+                          Delete 🗑️
+                        </button>
+                        
+                        <label className="switch">
+                          <input 
+                            type="checkbox" 
+                            checked={product.inStock} 
+                            onChange={() => handleToggleProduct(product.id)}
+                          />
+                          <span className="slider"></span>
+                        </label>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -740,6 +850,185 @@ export default function Admin({ onNavigateToStorefront }) {
                 alt="OPay Payment Proof Screenshot" 
                 style={{ maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain', borderRadius: '8px', border: '1px solid var(--color-gray-medium)' }} 
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL OVERLAY: PRODUCT EDIT / ADD FORM */}
+      {isProductModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsProductModalOpen(false)} style={{ zIndex: 99998 }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+            <div className="modal-header">
+              <h2>{editingProduct ? 'Edit Menu Item ✏️' : 'Add New Menu Item ➕'}</h2>
+              <button className="modal-close" onClick={() => setIsProductModalOpen(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="modal-body" style={{ maxHeight: '80vh', overflowY: 'auto', padding: '20px' }}>
+              <form onSubmit={handleProductFormSubmit} className="checkout-form" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div className="form-group">
+                  <label htmlFor="pName">Item Name *</label>
+                  <input 
+                    type="text" 
+                    id="pName" 
+                    required 
+                    value={formName}
+                    onChange={(e) => setFormName(e.target.value)}
+                    placeholder="e.g. Strawberry Supreme" 
+                  />
+                </div>
+
+                <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div className="form-group">
+                    <label htmlFor="pCategory">Category *</label>
+                    <select 
+                      id="pCategory" 
+                      value={formCategory}
+                      onChange={(e) => setFormCategory(e.target.value)}
+                      style={{ padding: '12px', borderRadius: 'var(--border-radius-sm)', border: '1px solid var(--color-gray-medium)' }}
+                    >
+                      <option value="parfaits">Parfaits</option>
+                      <option value="yoghurts">Bottled Yoghurts</option>
+                      <option value="waffles">Waffles</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="pImage">Picture Path/URL *</label>
+                    <input 
+                      type="text" 
+                      id="pImage" 
+                      required 
+                      value={formImage}
+                      onChange={(e) => setFormImage(e.target.value)}
+                      placeholder="e.g. /parfait_cup.jpg" 
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="pDescription">Description / Ingredients *</label>
+                  <textarea 
+                    id="pDescription" 
+                    required 
+                    rows="3"
+                    value={formDescription}
+                    onChange={(e) => setFormDescription(e.target.value)}
+                    placeholder="List the ingredients and base details..."
+                  ></textarea>
+                </div>
+
+                {formCategory === 'parfaits' && (
+                  <div style={{ border: '1px solid var(--color-gray-medium)', padding: '16px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <h4 style={{ margin: 0, fontSize: '14px', color: 'var(--color-primary)' }}>Parfait Options & Pricing</h4>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={formHasBaseOptions}
+                        onChange={(e) => setFormHasBaseOptions(e.target.checked)}
+                      />
+                      Enable Yoghurt Base Upgrades (Regular vs Greek)
+                    </label>
+                    {formHasBaseOptions ? (
+                      <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                        <div className="form-group">
+                          <label>Regular Base Price (₦) *</label>
+                          <input 
+                            type="number" 
+                            required 
+                            value={formPriceRegular}
+                            onChange={(e) => setFormPriceRegular(e.target.value)}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>Greek Base Price (₦) *</label>
+                          <input 
+                            type="number" 
+                            required 
+                            value={formPriceGreek}
+                            onChange={(e) => setFormPriceGreek(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="form-group">
+                        <label>Flat Price (₦) *</label>
+                        <input 
+                          type="number" 
+                          required 
+                          value={formPrice}
+                          onChange={(e) => { setFormPrice(e.target.value); setFormPriceRegular(e.target.value); }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {formCategory === 'yoghurts' && (
+                  <div style={{ border: '1px solid var(--color-gray-medium)', padding: '16px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <h4 style={{ margin: 0, fontSize: '14px', color: 'var(--color-primary)' }}>Yoghurt Options & Bundles</h4>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={formHasPackOptions}
+                        onChange={(e) => setFormHasPackOptions(e.target.checked)}
+                      />
+                      Enable Pack Pricing (Single, Pack 6, Pack 12)
+                    </label>
+                    <div className="form-group">
+                      <label>Single Bottle Price (₦) *</label>
+                      <input 
+                        type="number" 
+                        required 
+                        value={formPrice}
+                        onChange={(e) => setFormPrice(e.target.value)}
+                      />
+                    </div>
+                    {formHasPackOptions && (
+                      <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                        <div className="form-group">
+                          <label>Pack 6 Price (₦) *</label>
+                          <input 
+                            type="number" 
+                            required 
+                            value={formPack6Price}
+                            onChange={(e) => setFormPack6Price(e.target.value)}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>Pack 12 Price (₦) *</label>
+                          <input 
+                            type="number" 
+                            required 
+                            value={formPack12Price}
+                            onChange={(e) => setFormPack12Price(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {formCategory === 'waffles' && (
+                  <div className="form-group">
+                    <label>Waffle Flat Price (₦) *</label>
+                    <input 
+                      type="number" 
+                      required 
+                      value={formPrice}
+                      onChange={(e) => setFormPrice(e.target.value)}
+                    />
+                  </div>
+                )}
+
+                <button 
+                  type="submit" 
+                  className="btn btn-primary"
+                  style={{ width: '100%', padding: '14px', marginTop: '12px' }}
+                >
+                  {editingProduct ? 'Save Changes ✓' : 'Add Product ➕'}
+                </button>
+              </form>
             </div>
           </div>
         </div>
