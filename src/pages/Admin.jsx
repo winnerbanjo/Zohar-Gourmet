@@ -10,7 +10,8 @@ import {
   LogOut,
   BellRing,
   Eye,
-  X
+  X,
+  Upload
 } from 'lucide-react';
 
 export default function Admin({ onNavigateToStorefront }) {
@@ -269,6 +270,16 @@ export default function Admin({ onNavigateToStorefront }) {
       database.deleteProduct(id);
       alert('Product deleted successfully!');
     }
+  };
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setFormImage(reader.result);
+    };
+    reader.readAsDataURL(file);
   };
 
   const enableAudioFeedback = () => {
@@ -894,14 +905,37 @@ export default function Admin({ onNavigateToStorefront }) {
                     </select>
                   </div>
                   <div className="form-group">
-                    <label htmlFor="pImage">Picture Path/URL *</label>
+                    <label>Picture (Upload or Link) *</label>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        style={{ display: 'none' }}
+                        id="product-image-upload"
+                      />
+                      <label 
+                        htmlFor="product-image-upload"
+                        className="btn btn-outline"
+                        style={{ padding: '8px 12px', fontSize: '11px', borderRadius: '6px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px', margin: 0, whiteSpace: 'nowrap' }}
+                      >
+                        <Upload size={12} /> Upload File 📸
+                      </label>
+                      {formImage && (
+                        <img 
+                          src={formImage} 
+                          alt="" 
+                          style={{ width: '38px', height: '38px', borderRadius: '4px', objectFit: 'cover', border: '1px solid var(--color-gray-medium)' }} 
+                        />
+                      )}
+                    </div>
                     <input 
                       type="text" 
-                      id="pImage" 
-                      required 
+                      required
                       value={formImage}
                       onChange={(e) => setFormImage(e.target.value)}
-                      placeholder="e.g. /parfait_cup.jpg" 
+                      placeholder="Or paste link: /parfait_cup.jpg"
+                      style={{ marginTop: '6px', padding: '6px 10px', fontSize: '11px' }}
                     />
                   </div>
                 </div>
