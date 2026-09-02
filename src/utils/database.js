@@ -10,7 +10,7 @@ const INITIAL_PRODUCTS = [
     priceRegular: 4000,
     priceGreek: 5000,
     hasBaseOptions: true,
-    image: '/parfait_cup.jpg', // Client parfait image
+    image: '/parfait_cup.jpg',
     inStock: true
   },
   {
@@ -21,18 +21,18 @@ const INITIAL_PRODUCTS = [
     priceRegular: 3000,
     priceGreek: 4000,
     hasBaseOptions: true,
-    image: '/parfait_cup.jpg', // Client parfait image
+    image: '/parfait_cup.jpg',
     inStock: true
   },
   {
     id: 'parfait-330',
-    name: 'Mini Nutty (330ml)', // Renamed from Classic Parfait
+    name: 'Mini Nutty (330ml)',
     category: 'parfaits',
     description: 'Perfect portion size of yogurt, apple, granola, coconut flakes, cashew nut, almond nut, and grapes.',
     priceRegular: 3000,
     priceGreek: 4000,
     hasBaseOptions: true,
-    image: '/parfait_cup.jpg', // Client parfait image
+    image: '/parfait_cup.jpg',
     inStock: true
   },
   {
@@ -43,7 +43,7 @@ const INITIAL_PRODUCTS = [
     priceRegular: 6500,
     priceGreek: 7500,
     hasBaseOptions: true,
-    image: '/parfait_cup.jpg', // Client parfait image
+    image: '/parfait_cup.jpg',
     inStock: true
   },
   {
@@ -55,7 +55,7 @@ const INITIAL_PRODUCTS = [
     pack6Price: 7000,
     pack12Price: 14000,
     hasPackOptions: true,
-    image: '/yogurt_bottles_6.jpg', // Client wrapped pack
+    image: '/yogurt_bottles_6.jpg',
     inStock: true
   },
   {
@@ -67,7 +67,7 @@ const INITIAL_PRODUCTS = [
     pack6Price: 10500,
     pack12Price: 21000,
     hasPackOptions: true,
-    image: '/yogurt_bottles_4.jpg', // Client 4 bottles
+    image: '/yogurt_bottles_4.jpg',
     inStock: true
   },
   {
@@ -76,7 +76,7 @@ const INITIAL_PRODUCTS = [
     category: 'waffles',
     description: 'Freshly baked golden waffle served with premium natural honey.',
     price: 1700,
-    image: '/waffles.jpg', // Client waffles stack
+    image: '/waffles.jpg',
     inStock: true
   },
   {
@@ -85,7 +85,7 @@ const INITIAL_PRODUCTS = [
     category: 'waffles',
     description: 'Two stacks of our signature golden waffles served with natural honey.',
     price: 3000,
-    image: '/waffles.jpg', // Client waffles stack
+    image: '/waffles.jpg',
     inStock: true
   },
   {
@@ -94,7 +94,7 @@ const INITIAL_PRODUCTS = [
     category: 'waffles',
     description: 'Two stacks of our signature golden waffles served with natural honey and fresh apple slices.',
     price: 3500,
-    image: '/waffles.jpg', // Client waffles stack
+    image: '/waffles.jpg',
     inStock: true
   }
 ];
@@ -109,12 +109,40 @@ const INITIAL_TOPPINGS = [
   { id: 'grape', name: 'Fresh Sweet Grapes', price: 500, inStock: true }
 ];
 
+// Initial Customer Reviews Data
+const INITIAL_REVIEWS = [
+  {
+    id: 'rev-1',
+    name: 'Chidimma K.',
+    rating: 5,
+    comment: 'The Nutty Parfait is out of this world! Fresh crunchy granola and generous cashew portions. Umuahia needed this!',
+    date: '2026-07-15',
+    isApproved: true
+  },
+  {
+    id: 'rev-2',
+    name: 'Emeka O.',
+    rating: 5,
+    comment: 'Super fast delivery and the Greek yoghurt base is so thick and creamy. Will definitely order again.',
+    date: '2026-07-22',
+    isApproved: true
+  },
+  {
+    id: 'rev-3',
+    name: 'Blessing A.',
+    rating: 5,
+    comment: 'Golden waffles with natural honey were delivered warm and crisp. Best treat in Afara Majestic!',
+    date: '2026-08-01',
+    isApproved: true
+  }
+];
+
 // Default Store Settings
 const DEFAULT_SETTINGS = {
   whatsapp1: '+2348121040943',
   whatsapp2: '+2348086674676',
   opayNumber: '8121040943',
-  opayName: 'Atuma Shalom Chiamaka', // Updated to client's name
+  opayName: 'Atuma Shalom Chiamaka',
   opayBank: 'OPay',
   address: 'Ify Jones Junction, Afara Majestic, Umuahia, Abia State',
   openHours: {
@@ -123,79 +151,19 @@ const DEFAULT_SETTINGS = {
   }
 };
 
-// Initial Database Seeding with automatic schema & name syncing
+// Initial Database Seeding without overwriting user customizations
 const initDB = () => {
-  const storedProducts = localStorage.getItem('zohar_products');
-  if (!storedProducts) {
+  if (!localStorage.getItem('zohar_products')) {
     localStorage.setItem('zohar_products', JSON.stringify(INITIAL_PRODUCTS));
-  } else {
-    try {
-      let parsed = JSON.parse(storedProducts);
-      let updated = false;
-
-      // Update details/names/prices of existing items from code schema
-      parsed = parsed.map(p => {
-        const matchingInitial = INITIAL_PRODUCTS.find(i => i.id === p.id);
-        if (matchingInitial) {
-          // Check if name, description, category, or prices changed
-          if (p.name !== matchingInitial.name || 
-              p.price !== matchingInitial.price ||
-              p.priceRegular !== matchingInitial.priceRegular ||
-              p.priceGreek !== matchingInitial.priceGreek ||
-              p.description !== matchingInitial.description ||
-              p.image !== matchingInitial.image) {
-            updated = true;
-            return { ...p, ...matchingInitial };
-          }
-        }
-        return p;
-      });
-
-      // Filter out products that were removed in the code (e.g. old waffles)
-      const initialIds = INITIAL_PRODUCTS.map(i => i.id);
-      const filteredParsed = parsed.filter(p => {
-        const keep = initialIds.includes(p.id);
-        if (!keep) updated = true;
-        return keep;
-      });
-
-      // Add any new products added in code (e.g. double waffle + honey + apples)
-      INITIAL_PRODUCTS.forEach(initialProd => {
-        if (!filteredParsed.some(p => p.id === initialProd.id)) {
-          filteredParsed.push(initialProd);
-          updated = true;
-        }
-      });
-
-      if (updated) {
-        localStorage.setItem('zohar_products', JSON.stringify(filteredParsed));
-      }
-    } catch (e) {
-      localStorage.setItem('zohar_products', JSON.stringify(INITIAL_PRODUCTS));
-    }
   }
-
-  // Force settings update to migrate OPay name to "Atuma Shalom Chiamaka"
-  const storedSettings = localStorage.getItem('zohar_settings');
-  if (!storedSettings) {
-    localStorage.setItem('zohar_settings', JSON.stringify(DEFAULT_SETTINGS));
-  } else {
-    try {
-      const parsedSettings = JSON.parse(storedSettings);
-      if (parsedSettings.opayName !== DEFAULT_SETTINGS.opayName) {
-        parsedSettings.opayName = DEFAULT_SETTINGS.opayName;
-        localStorage.setItem('zohar_settings', JSON.stringify(parsedSettings));
-      }
-    } catch(e) {
-      localStorage.setItem('zohar_settings', JSON.stringify(DEFAULT_SETTINGS));
-    }
-  }
-
   if (!localStorage.getItem('zohar_toppings')) {
     localStorage.setItem('zohar_toppings', JSON.stringify(INITIAL_TOPPINGS));
   }
   if (!localStorage.getItem('zohar_settings')) {
     localStorage.setItem('zohar_settings', JSON.stringify(DEFAULT_SETTINGS));
+  }
+  if (!localStorage.getItem('zohar_reviews')) {
+    localStorage.setItem('zohar_reviews', JSON.stringify(INITIAL_REVIEWS));
   }
   if (!localStorage.getItem('zohar_orders')) {
     localStorage.setItem('zohar_orders', JSON.stringify([]));
@@ -208,7 +176,6 @@ initDB();
 // Trigger a custom event in the current tab and rely on storage event for other tabs
 const broadcastUpdate = () => {
   window.dispatchEvent(new Event('zohar-db-update'));
-  // Update storage timestamp to trigger the storage event in other tabs
   localStorage.setItem('zohar_db_sync_time', Date.now().toString());
 };
 
@@ -278,6 +245,79 @@ export const database = {
     }
   },
 
+  // Add a new topping
+  addTopping: (toppingData) => {
+    const toppings = database.getToppings();
+    const newTopping = {
+      id: 'top-' + Date.now(),
+      inStock: true,
+      price: Number(toppingData.price) || 500,
+      name: toppingData.name
+    };
+    toppings.push(newTopping);
+    localStorage.setItem('zohar_toppings', JSON.stringify(toppings));
+    broadcastUpdate();
+    return newTopping;
+  },
+
+  // Update existing topping
+  updateTopping: (updatedTopping) => {
+    const toppings = database.getToppings();
+    const index = toppings.findIndex(t => t.id === updatedTopping.id);
+    if (index !== -1) {
+      toppings[index] = { ...toppings[index], ...updatedTopping };
+      localStorage.setItem('zohar_toppings', JSON.stringify(toppings));
+      broadcastUpdate();
+    }
+  },
+
+  // Delete topping
+  deleteTopping: (id) => {
+    const toppings = database.getToppings();
+    const filtered = toppings.filter(t => t.id !== id);
+    localStorage.setItem('zohar_toppings', JSON.stringify(filtered));
+    broadcastUpdate();
+  },
+
+  // Get all reviews
+  getReviews: () => {
+    return JSON.parse(localStorage.getItem('zohar_reviews')) || INITIAL_REVIEWS;
+  },
+
+  // Add a review
+  addReview: (reviewData) => {
+    const reviews = database.getReviews();
+    const newReview = {
+      id: 'rev-' + Date.now(),
+      date: new Date().toISOString().split('T')[0],
+      isApproved: true,
+      ...reviewData
+    };
+    reviews.unshift(newReview);
+    localStorage.setItem('zohar_reviews', JSON.stringify(reviews));
+    broadcastUpdate();
+    return newReview;
+  },
+
+  // Toggle review approval
+  toggleReviewApproval: (id) => {
+    const reviews = database.getReviews();
+    const index = reviews.findIndex(r => r.id === id);
+    if (index !== -1) {
+      reviews[index].isApproved = !reviews[index].isApproved;
+      localStorage.setItem('zohar_reviews', JSON.stringify(reviews));
+      broadcastUpdate();
+    }
+  },
+
+  // Delete review
+  deleteReview: (id) => {
+    const reviews = database.getReviews();
+    const filtered = reviews.filter(r => r.id !== id);
+    localStorage.setItem('zohar_reviews', JSON.stringify(filtered));
+    broadcastUpdate();
+  },
+
   // Get Store Settings
   getSettings: () => {
     return JSON.parse(localStorage.getItem('zohar_settings')) || DEFAULT_SETTINGS;
@@ -298,12 +338,12 @@ export const database = {
   createOrder: (orderData) => {
     const orders = database.getOrders();
     const newOrder = {
-      id: 'ZH-' + Math.floor(100000 + Math.random() * 900000), // Random 6 digit ID
+      id: 'ZH-' + Math.floor(100000 + Math.random() * 900000),
       status: 'Pending',
       createdAt: new Date().toISOString(),
       ...orderData
     };
-    orders.unshift(newOrder); // Add to the beginning
+    orders.unshift(newOrder);
     localStorage.setItem('zohar_orders', JSON.stringify(orders));
     broadcastUpdate();
     return newOrder;
@@ -324,23 +364,19 @@ export const database = {
   isStoreOpen: () => {
     const settings = database.getSettings();
     const now = new Date();
-    const day = now.getDay(); // 0 is Sunday, 1 is Monday, ..., 6 is Saturday
+    const day = now.getDay();
     
-    // Format current time as HH:MM
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     const currentTimeString = `${hours}:${minutes}`;
 
     if (day >= 1 && day <= 5) {
-      // Mon - Fri
       const { start, end } = settings.openHours.weekdays;
       return currentTimeString >= start && currentTimeString <= end;
     } else if (day === 6) {
-      // Saturday
       const { start, end } = settings.openHours.saturday;
       return currentTimeString >= start && currentTimeString <= end;
     } else {
-      // Sunday (Closed)
       return false;
     }
   },
@@ -361,18 +397,18 @@ export const database = {
     broadcastUpdate();
   },
 
-  // Reset all settings and inventory to defaults
+  // Reset all settings, inventory and reviews to defaults
   resetDatabase: () => {
     localStorage.removeItem('zohar_products');
     localStorage.removeItem('zohar_toppings');
     localStorage.removeItem('zohar_settings');
+    localStorage.removeItem('zohar_reviews');
     localStorage.removeItem('zohar_orders');
     initDB();
     broadcastUpdate();
   }
 };
 
-// Helper function to format HH:MM into AM/PM
 function formatTime(timeString) {
   if (!timeString) return '';
   const [hour, minute] = timeString.split(':');

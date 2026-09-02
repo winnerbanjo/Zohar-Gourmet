@@ -17,7 +17,8 @@ import {
   ArrowLeft,
   Truck,
   Check,
-  Search
+  Search,
+  Star
 } from 'lucide-react';
 
 // Umuahia Locations list with exact tiered pricing
@@ -144,10 +145,15 @@ export default function Storefront({ onNavigateToAdmin }) {
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
   const [showDeliveryFeesList, setShowDeliveryFeesList] = useState(false);
 
-  // Store settings
+  // Store settings & reviews
   const [isStoreOpen, setIsStoreOpen] = useState(true);
   const [settings, setSettings] = useState({});
   const [hoursDisplay, setHoursDisplay] = useState({});
+  const [reviews, setReviews] = useState([]);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [newRevName, setNewRevName] = useState('');
+  const [newRevRating, setNewRevRating] = useState(5);
+  const [newRevComment, setNewRevComment] = useState('');
 
   // Product configurations for UI card selectors
   const [productConfigs, setProductConfigs] = useState({});
@@ -175,6 +181,7 @@ export default function Storefront({ onNavigateToAdmin }) {
     setIsStoreOpen(database.isStoreOpen());
     setSettings(database.getSettings());
     setHoursDisplay(database.getHoursDisplay());
+    setReviews(database.getReviews().filter(r => r.isApproved));
 
     // If active order tracker is open, reload it live!
     if (trackingOrderId) {
@@ -912,6 +919,36 @@ export default function Storefront({ onNavigateToAdmin }) {
             </div>
           </section>
         </div>
+      )}
+
+      {/* Customer Reviews Section */}
+      {reviews.length > 0 && (
+        <section id="reviews" className="section section-bg-cream">
+          <div className="container">
+            <div className="section-header">
+              <h2>What Our Customers Say</h2>
+              <p>Real reviews from satisfied Zohar Gourmet customers across Umuahia.</p>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+              {reviews.map(rev => (
+                <div key={rev.id} className="glass" style={{ padding: '24px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    {[1,2,3,4,5].map(s => (
+                      <Star key={s} size={16} fill={s <= rev.rating ? '#ffb703' : 'none'} color={s <= rev.rating ? '#ffb703' : '#ccc'} />
+                    ))}
+                  </div>
+                  <p style={{ fontSize: '14px', color: 'var(--color-gray-dark)', fontStyle: 'italic', margin: 0 }}>
+                    "{rev.comment}"
+                  </p>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: '12px', borderTop: '1px solid var(--color-gray-light)' }}>
+                    <strong style={{ fontSize: '14px', color: 'var(--color-primary-dark)' }}>{rev.name}</strong>
+                    <span style={{ fontSize: '11px', color: 'var(--color-gray-medium)' }}>{rev.date}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
       )}
 
       {/* Gourmet Guide & FAQs (Docs Section) */}

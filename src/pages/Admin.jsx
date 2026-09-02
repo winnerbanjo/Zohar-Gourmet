@@ -11,7 +11,8 @@ import {
   BellRing,
   Eye,
   X,
-  Upload
+  Upload,
+  Star
 } from 'lucide-react';
 
 export default function Admin({ onNavigateToStorefront }) {
@@ -26,8 +27,21 @@ export default function Admin({ onNavigateToStorefront }) {
   const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]);
   const [toppings, setToppings] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [settings, setSettings] = useState({});
-  const [activeTab, setActiveTab] = useState('orders'); // 'orders', 'inventory', 'settings'
+  const [activeTab, setActiveTab] = useState('orders'); // 'orders', 'inventory', 'reviews', 'settings'
+
+  // Topping edit/add states
+  const [isToppingModalOpen, setIsToppingModalOpen] = useState(false);
+  const [editingTopping, setEditingTopping] = useState(null);
+  const [toppingFormName, setToppingFormName] = useState('');
+  const [toppingFormPrice, setToppingFormPrice] = useState(500);
+
+  // Review add states
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [reviewFormName, setReviewFormName] = useState('');
+  const [reviewFormRating, setReviewFormRating] = useState(5);
+  const [reviewFormComment, setReviewFormComment] = useState('');
   
   // Audio state
   const [audioEnabled, setAudioEnabled] = useState(false);
@@ -69,6 +83,7 @@ export default function Admin({ onNavigateToStorefront }) {
     setOrders(currentOrders);
     setProducts(database.getProducts());
     setToppings(database.getToppings());
+    setReviews(database.getReviews());
     
     const currentSettings = database.getSettings();
     setSettings(currentSettings);
@@ -272,6 +287,70 @@ export default function Admin({ onNavigateToStorefront }) {
     }
   };
 
+  // Topping Handlers
+  const handleOpenAddTopping = () => {
+    setEditingTopping(null);
+    setToppingFormName('');
+    setToppingFormPrice(500);
+    setIsToppingModalOpen(true);
+  };
+
+  const handleOpenEditTopping = (topping) => {
+    setEditingTopping(topping);
+    setToppingFormName(topping.name || '');
+    setToppingFormPrice(topping.price || 500);
+    setIsToppingModalOpen(true);
+  };
+
+  const handleToppingFormSubmit = (e) => {
+    e.preventDefault();
+    if (editingTopping) {
+      database.updateTopping({ id: editingTopping.id, name: toppingFormName, price: Number(toppingFormPrice) });
+      alert('Topping updated successfully!');
+    } else {
+      database.addTopping({ name: toppingFormName, price: Number(toppingFormPrice) });
+      alert('Topping added successfully!');
+    }
+    setIsToppingModalOpen(false);
+  };
+
+  const handleDeleteTopping = (id) => {
+    if (window.confirm('Are you sure you want to delete this topping?')) {
+      database.deleteTopping(id);
+      alert('Topping deleted successfully!');
+    }
+  };
+
+  // Review Handlers
+  const handleOpenAddReview = () => {
+    setReviewFormName('');
+    setReviewFormRating(5);
+    setReviewFormComment('');
+    setIsReviewModalOpen(true);
+  };
+
+  const handleReviewFormSubmit = (e) => {
+    e.preventDefault();
+    database.addReview({
+      name: reviewFormName,
+      rating: Number(reviewFormRating),
+      comment: reviewFormComment
+    });
+    alert('Review added successfully!');
+    setIsReviewModalOpen(false);
+  };
+
+  const handleToggleReviewApproval = (id) => {
+    database.toggleReviewApproval(id);
+  };
+
+  const handleDeleteReview = (id) => {
+    if (window.confirm('Are you sure you want to delete this review?')) {
+      database.deleteReview(id);
+      alert('Review deleted!');
+    }
+  };
+
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -356,6 +435,15 @@ export default function Admin({ onNavigateToStorefront }) {
             >
               <Package size={18} />
               <span>Stock Control</span>
+            </button>
+          </li>
+          <li>
+            <button 
+              className={`admin-nav-btn ${activeTab === 'reviews' ? 'active' : ''}`}
+              onClick={() => setActiveTab('reviews')}
+            >
+              <Star size={18} />
+              <span>Customer Reviews</span>
             </button>
           </li>
           <li>
@@ -660,26 +748,51 @@ export default function Admin({ onNavigateToStorefront }) {
               </div>
 
               <div>
-                <h3 style={{ fontSize: '18px', marginBottom: '16px', borderBottom: '2px solid var(--color-primary-light)', paddingBottom: '8px' }}>
-                  Custom Parfait Toppings
-                </h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '2px solid var(--color-primary-light)', paddingBottom: '8px' }}>
+                  <h3 style={{ fontSize: '18px', margin: 0 }}>
+                    Custom Parfait Toppings
+                  </h3>
+                  <button 
+                    onClick={handleOpenAddTopping} 
+                    className="btn btn-accent btn-sm"
+                    style={{ fontSize: '12px', padding: '6px 12px', height: 'auto', width: 'auto' }}
+                  >
+                    Add Extra Topping ➕
+                  </button>
+                </div>
                 <div className="inventory-list">
                   {toppings.map(topping => (
-                    <div key={topping.id} className="inventory-item">
-                      <div className="inventory-info">
+                    <div key={topping.id} className="inventory-item" style={{ flexWrap: 'wrap', gap: '10px' }}>
+                      <div className="inventory-info" style={{ minWidth: '130px' }}>
                         <h4>{topping.name}</h4>
-                        <p style={{ fontWeight: 600, color: 'var(--color-accent-dark)' }}>
+                        <p style={{ fontWeight: 600, color: 'var(--color-accent-dark)', fontSize: '11px' }}>
                           ₦{topping.price} / portion
                         </p>
                       </div>
-                      <label className="switch">
-                        <input 
-                          type="checkbox" 
-                          checked={topping.inStock} 
-                          onChange={() => handleToggleTopping(topping.id)}
-                        />
-                        <span className="slider"></span>
-                      </label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
+                        <button 
+                          className="btn btn-outline" 
+                          onClick={() => handleOpenEditTopping(topping)}
+                          style={{ padding: '4px 8px', fontSize: '11px', borderRadius: '4px' }}
+                        >
+                          Edit ✏️
+                        </button>
+                        <button 
+                          className="btn btn-text" 
+                          onClick={() => handleDeleteTopping(topping.id)}
+                          style={{ padding: '4px 8px', fontSize: '11px', color: 'var(--color-danger)' }}
+                        >
+                          Delete 🗑️
+                        </button>
+                        <label className="switch">
+                          <input 
+                            type="checkbox" 
+                            checked={topping.inStock} 
+                            onChange={() => handleToggleTopping(topping.id)}
+                          />
+                          <span className="slider"></span>
+                        </label>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -688,7 +801,62 @@ export default function Admin({ onNavigateToStorefront }) {
           </div>
         )}
 
-        {/* Tab 3: Store Configuration & Settings override */}
+        {/* Tab 3: Customer Reviews Manager */}
+        {activeTab === 'reviews' && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <h2 style={{ fontSize: '24px', color: 'var(--color-primary-dark)', margin: 0 }}>Customer Reviews</h2>
+                <p style={{ color: 'var(--color-gray-dark)', fontSize: '13px', margin: 0 }}>Manage customer testimonials on your storefront catalog.</p>
+              </div>
+              <button 
+                onClick={handleOpenAddReview} 
+                className="btn btn-accent"
+                style={{ padding: '10px 18px', fontSize: '13px', borderRadius: '8px' }}
+              >
+                Add Review ➕
+              </button>
+            </div>
+
+            <div className="inventory-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
+              {reviews.map(rev => (
+                <div key={rev.id} className="glass" style={{ padding: '20px', borderRadius: '12px', border: '1px solid var(--color-gray-medium)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <strong style={{ fontSize: '15px' }}>{rev.name}</strong>
+                      <span style={{ fontSize: '12px', color: 'var(--color-gray-dark)' }}>{rev.date}</span>
+                    </div>
+                    <div style={{ color: '#ffb703', marginBottom: '8px', fontSize: '14px' }}>
+                      {'⭐'.repeat(rev.rating)} ({rev.rating}/5)
+                    </div>
+                    <p style={{ fontSize: '13px', color: 'var(--color-gray-dark)', fontStyle: 'italic', marginBottom: '16px' }}>
+                      "{rev.comment}"
+                    </p>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--color-gray-light)', paddingTop: '12px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', cursor: 'pointer' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={rev.isApproved} 
+                        onChange={() => handleToggleReviewApproval(rev.id)}
+                      />
+                      <span>{rev.isApproved ? 'Visible on Storefront' : 'Hidden'}</span>
+                    </label>
+                    <button 
+                      className="btn btn-text" 
+                      onClick={() => handleDeleteReview(rev.id)}
+                      style={{ color: 'var(--color-danger)', fontSize: '12px' }}
+                    >
+                      Delete 🗑️
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Tab 4: Store Configuration & Settings override */}
         {activeTab === 'settings' && (
           <div className="glass" style={{ padding: '32px', borderRadius: '16px', maxWidth: '700px' }}>
             <form onSubmit={handleSaveSettings} className="checkout-form">
@@ -1061,6 +1229,102 @@ export default function Admin({ onNavigateToStorefront }) {
                   style={{ width: '100%', padding: '14px', marginTop: '12px' }}
                 >
                   {editingProduct ? 'Save Changes ✓' : 'Add Product ➕'}
+                </button>
+              </form>
+            </div>
+           </div>
+        </div>
+      )}
+
+      {/* MODAL OVERLAY: EXTRA TOPPING FORM */}
+      {isToppingModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsToppingModalOpen(false)} style={{ zIndex: 99998 }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+            <div className="modal-header">
+              <h2>{editingTopping ? 'Edit Extra Topping ✏️' : 'Add Extra Topping ➕'}</h2>
+              <button className="modal-close" onClick={() => setIsToppingModalOpen(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="modal-body" style={{ padding: '20px' }}>
+              <form onSubmit={handleToppingFormSubmit} className="checkout-form" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div className="form-group">
+                  <label>Topping Name *</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={toppingFormName}
+                    onChange={(e) => setToppingFormName(e.target.value)}
+                    placeholder="e.g. Sliced Strawberries" 
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Price per Portion (₦) *</label>
+                  <input 
+                    type="number" 
+                    required 
+                    value={toppingFormPrice}
+                    onChange={(e) => setToppingFormPrice(e.target.value)}
+                    placeholder="500" 
+                  />
+                </div>
+                <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '12px', marginTop: '10px' }}>
+                  {editingTopping ? 'Save Changes ✓' : 'Add Topping ➕'}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL OVERLAY: ADMIN ADD REVIEW FORM */}
+      {isReviewModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsReviewModalOpen(false)} style={{ zIndex: 99998 }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '450px' }}>
+            <div className="modal-header">
+              <h2>Add Customer Review ✍️</h2>
+              <button className="modal-close" onClick={() => setIsReviewModalOpen(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="modal-body" style={{ padding: '20px' }}>
+              <form onSubmit={handleReviewFormSubmit} className="checkout-form" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div className="form-group">
+                  <label>Customer Name *</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={reviewFormName}
+                    onChange={(e) => setReviewFormName(e.target.value)}
+                    placeholder="e.g. Joy N." 
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Rating *</label>
+                  <select 
+                    value={reviewFormRating}
+                    onChange={(e) => setReviewFormRating(e.target.value)}
+                    style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--color-gray-medium)' }}
+                  >
+                    <option value={5}>5 Stars ⭐⭐⭐⭐⭐</option>
+                    <option value={4}>4 Stars ⭐⭐⭐⭐</option>
+                    <option value={3}>3 Stars ⭐⭐⭐</option>
+                    <option value={2}>2 Stars ⭐⭐</option>
+                    <option value={1}>1 Star ⭐</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Review Comment *</label>
+                  <textarea 
+                    required 
+                    rows="3"
+                    value={reviewFormComment}
+                    onChange={(e) => setReviewFormComment(e.target.value)}
+                    placeholder="Customer testimonial..."
+                  ></textarea>
+                </div>
+                <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '12px', marginTop: '10px' }}>
+                  Post Review 🚀
                 </button>
               </form>
             </div>
