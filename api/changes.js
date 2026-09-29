@@ -12,9 +12,11 @@ module.exports = async (req, res) => {
     const stamp = async (table) => {
       try {
         const col = table === 'orders' ? 'created_at' : 'updated_at';
-        const { rows } = await db.query(`SELECT COALESCE(MAX(${col}), 0) AS t FROM ${table}`);
-        const t = rows[0].t;
-        return t ? new Date(t).getTime() : 0;
+        // EXTRACT(EPOCH)*1000 avoids COALESCE(timestamp, integer) type errors
+        const { rows } = await db.query(
+          `SELECT COALESCE(EXTRACT(EPOCH FROM MAX(${col})) * 1000, 0) AS t FROM ${table}`
+        );
+        return Number(rows[0].t) || 0;
       } catch (stampErr) {
         console.error(`changes: stamp query failed for ${table}:`, stampErr.message);
         throw stampErr;
