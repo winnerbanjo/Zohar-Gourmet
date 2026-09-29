@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { database } from '../utils/database';
+import { database, getSnapshot, readLegacyCatalog } from '../utils/database';
 import { 
   Lock, 
   ShoppingBag, 
@@ -19,7 +19,7 @@ export default function Admin({ onNavigateToStorefront }) {
   // Authentication State
   const [passcode, setPasscode] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(
-    sessionStorage.getItem('zohar_admin_authed') === 'true'
+    getSnapshot()?.authenticated === true
   );
   const [authError, setAuthError] = useState('');
 
@@ -77,8 +77,23 @@ export default function Admin({ onNavigateToStorefront }) {
   const [formHasBaseOptions, setFormHasBaseOptions] = useState(false);
   const [formHasPackOptions, setFormHasPackOptions] = useState(false);
 
+  const loadedSettings = useRef(null);
+  const settingsRevision = useRef(null);
+  const editorRevision = useRef(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const busy = useRef(false);
+  const save = async (operation) => {
+    if (busy.current) return;
+    busy.current = true; setSaving(true); setSaveError('');
+    try { await operation(); }
+    catch (error) { setSaveError(error.message); }
+    finally { busy.current = false; setSaving(false); }
+  };
+
   // Load database values
   const loadAdminData = () => {
+    setIsAuthenticated(getSnapshot()?.authenticated === true);
     const currentOrders = database.getOrders();
     setOrders(currentOrders);
     setProducts(database.getProducts());
@@ -88,6 +103,10 @@ export default function Admin({ onNavigateToStorefront }) {
     const currentSettings = database.getSettings();
     setSettings(currentSettings);
     
+    if (loadedSettings.current && JSON.stringify(loadedSettings.current) === JSON.stringify(currentSettings)) settingsRevision.current = getSnapshot().revision;
+    if (loadedSettings.current === null) {
+    loadedSettings.current = currentSettings;
+    settingsRevision.current = getSnapshot().revision;
     // Bind setting form values
     setWhatsapp1(currentSettings.whatsapp1);
     setWhatsapp2(currentSettings.whatsapp2);
@@ -99,6 +118,7 @@ export default function Admin({ onNavigateToStorefront }) {
     setWeekdayEnd(currentSettings.openHours.weekdays.end);
     setSaturdayStart(currentSettings.openHours.saturday.start);
     setSaturdayEnd(currentSettings.openHours.saturday.end);
+    }
 
     // Play chime on new order
     if (prevOrdersCount.current > 0 && currentOrders.length > prevOrdersCount.current) {
@@ -160,37 +180,33 @@ export default function Admin({ onNavigateToStorefront }) {
     }
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (passcode === 'zohar123') {
-      setIsAuthenticated(true);
-      sessionStorage.setItem('zohar_admin_authed', 'true');
-      setAuthError('');
-      setAudioEnabled(true);
-      setTimeout(playOrderChime, 100);
-    } else {
-      setAuthError('Incorrect passcode. Try again!');
-    }
+    try {
+      await database.login(passcode);
+      setIsAuthenticated(true); setPasscode(''); setAuthError('');
+      setAudioEnabled(true); setTimeout(playOrderChime, 100);
+    } catch (error) { setAuthError(error.message); }
   };
 
-  const handleLogout = () => {
+  const handleLogout = () => save(async () => {
+    await database.logout();
     setIsAuthenticated(false);
-    sessionStorage.removeItem('zohar_admin_authed');
-  };
+  });
 
-  const handleUpdateStatus = (orderId, newStatus) => {
-    database.updateOrderStatus(orderId, newStatus);
-  };
+  const handleUpdateStatus = (orderId, newStatus) => save(async () => {
+    await database.updateOrderStatus(orderId, newStatus);
+  });
 
-  const handleToggleProduct = (id) => {
-    database.toggleProductStock(id);
-  };
+  const handleToggleProduct = (id) => save(async () => {
+    await database.toggleProductStock(id);
+  });
 
-  const handleToggleTopping = (id) => {
-    database.toggleToppingStock(id);
-  };
+  const handleToggleTopping = (id) => save(async () => {
+    await database.toggleToppingStock(id);
+  });
 
-  const handleSaveSettings = (e) => {
+  const handleSaveSettings = (e) => save(async () => {
     e.preventDefault();
     const updatedSettings = {
       whatsapp1,
@@ -204,25 +220,28 @@ export default function Admin({ onNavigateToStorefront }) {
         saturday: { start: saturdayStart, end: saturdayEnd }
       }
     };
-    database.saveSettings(updatedSettings);
+    await database.saveSettings(updatedSettings, settingsRevision.current);
+    settingsRevision.current = getSnapshot().revision;
+    loadedSettings.current = updatedSettings;
     alert('Store configurations saved successfully!');
-  };
+  });
 
-  const handleClearOrders = () => {
+  const handleClearOrders = () => save(async () => {
     if (window.confirm("Are you sure you want to delete ALL order history? This cannot be undone.")) {
-      database.clearAllOrders();
+      await database.clearAllOrders();
       alert("All order history cleared!");
     }
-  };
+  });
 
-  const handleResetDatabase = () => {
+  const handleResetDatabase = () => save(async () => {
     if (window.confirm("Are you sure you want to reset ALL configurations, settings, and stock levels to defaults? This will clear all data.")) {
-      database.resetDatabase();
+      await database.resetDatabase();
       window.location.reload();
     }
-  };
+  });
 
   const handleOpenEditProduct = (product) => {
+    editorRevision.current = getSnapshot().revision;
     setEditingProduct(product);
     setFormName(product.name || '');
     setFormCategory(product.category || 'parfaits');
@@ -239,6 +258,7 @@ export default function Admin({ onNavigateToStorefront }) {
   };
 
   const handleOpenAddProduct = () => {
+    editorRevision.current = getSnapshot().revision;
     setEditingProduct(null);
     setFormName('');
     setFormCategory('parfaits');
@@ -254,7 +274,7 @@ export default function Admin({ onNavigateToStorefront }) {
     setIsProductModalOpen(true);
   };
 
-  const handleProductFormSubmit = (e) => {
+  const handleProductFormSubmit = (e) => save(async () => {
     e.preventDefault();
     const productData = {
       name: formName,
@@ -271,24 +291,25 @@ export default function Admin({ onNavigateToStorefront }) {
     };
 
     if (editingProduct) {
-      database.updateProduct({ id: editingProduct.id, ...productData });
+      await database.updateProduct({ id: editingProduct.id, ...productData }, editorRevision.current);
       alert('Product updated successfully!');
     } else {
-      database.addProduct(productData);
+      await database.addProduct(productData, editorRevision.current);
       alert('Product added successfully!');
     }
     setIsProductModalOpen(false);
-  };
+  });
 
-  const handleDeleteProduct = (id) => {
+  const handleDeleteProduct = (id) => save(async () => {
     if (window.confirm('Are you sure you want to delete this product?')) {
-      database.deleteProduct(id);
+      await database.deleteProduct(id);
       alert('Product deleted successfully!');
     }
-  };
+  });
 
   // Topping Handlers
   const handleOpenAddTopping = () => {
+    editorRevision.current = getSnapshot().revision;
     setEditingTopping(null);
     setToppingFormName('');
     setToppingFormPrice(500);
@@ -296,60 +317,62 @@ export default function Admin({ onNavigateToStorefront }) {
   };
 
   const handleOpenEditTopping = (topping) => {
+    editorRevision.current = getSnapshot().revision;
     setEditingTopping(topping);
     setToppingFormName(topping.name || '');
     setToppingFormPrice(topping.price || 500);
     setIsToppingModalOpen(true);
   };
 
-  const handleToppingFormSubmit = (e) => {
+  const handleToppingFormSubmit = (e) => save(async () => {
     e.preventDefault();
     if (editingTopping) {
-      database.updateTopping({ id: editingTopping.id, name: toppingFormName, price: Number(toppingFormPrice) });
+      await database.updateTopping({ id: editingTopping.id, name: toppingFormName, price: Number(toppingFormPrice) }, editorRevision.current);
       alert('Topping updated successfully!');
     } else {
-      database.addTopping({ name: toppingFormName, price: Number(toppingFormPrice) });
+      await database.addTopping({ name: toppingFormName, price: Number(toppingFormPrice) }, editorRevision.current);
       alert('Topping added successfully!');
     }
     setIsToppingModalOpen(false);
-  };
+  });
 
-  const handleDeleteTopping = (id) => {
+  const handleDeleteTopping = (id) => save(async () => {
     if (window.confirm('Are you sure you want to delete this topping?')) {
-      database.deleteTopping(id);
+      await database.deleteTopping(id);
       alert('Topping deleted successfully!');
     }
-  };
+  });
 
   // Review Handlers
   const handleOpenAddReview = () => {
+    editorRevision.current = getSnapshot().revision;
     setReviewFormName('');
     setReviewFormRating(5);
     setReviewFormComment('');
     setIsReviewModalOpen(true);
   };
 
-  const handleReviewFormSubmit = (e) => {
+  const handleReviewFormSubmit = (e) => save(async () => {
     e.preventDefault();
-    database.addReview({
+    await database.addReview({
       name: reviewFormName,
       rating: Number(reviewFormRating),
       comment: reviewFormComment
-    });
+    }, editorRevision.current);
     alert('Review added successfully!');
     setIsReviewModalOpen(false);
-  };
+  });
 
-  const handleToggleReviewApproval = (id) => {
-    database.toggleReviewApproval(id);
-  };
+  const handleToggleReviewApproval = (id) => save(async () => {
+    await database.toggleReviewApproval(id);
+  });
 
-  const handleDeleteReview = (id) => {
+  const handleDeleteReview = (id) => save(async () => {
     if (window.confirm('Are you sure you want to delete this review?')) {
-      database.deleteReview(id);
+      await database.deleteReview(id);
       alert('Review deleted!');
     }
-  };
+  });
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -387,7 +410,7 @@ export default function Admin({ onNavigateToStorefront }) {
               onChange={(e) => setPasscode(e.target.value)}
               placeholder="••••"
               className="passcode-input"
-              maxLength={10}
+              maxLength={200}
               required
             />
             {authError && <div className="passcode-error">{authError}</div>}
@@ -411,7 +434,11 @@ export default function Admin({ onNavigateToStorefront }) {
   }
 
   return (
-    <div className="admin-layout">
+    <div className="admin-layout" aria-busy={saving}>
+      <div style={{ position: 'fixed', top: 8, right: 8, zIndex: 10000, maxWidth: '90vw', background: '#fff', padding: saveError || saving ? 12 : 0 }}>
+        {saving && <span role="status">Saving…</span>}
+        {saveError && <span role="alert">{saveError}</span>}
+      </div>
       {/* Sidebar Navigation */}
       <aside className="admin-sidebar">
         <div className="admin-logo" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -859,7 +886,17 @@ export default function Admin({ onNavigateToStorefront }) {
         {/* Tab 4: Store Configuration & Settings override */}
         {activeTab === 'settings' && (
           <div className="glass" style={{ padding: '32px', borderRadius: '16px', maxWidth: '700px' }}>
-            <form onSubmit={handleSaveSettings} className="checkout-form">
+            {getSnapshot()?.canImport && readLegacyCatalog() && <div style={{ padding: 16, marginBottom: 16, background: '#fff3cd' }}>
+                <p>Have your latest menu saved on this phone? Import it once to share it with every device. Do this on your main phone before making new edits.</p>
+                <button type="button" className="btn btn-primary" disabled={saving} onClick={() => {
+                  if (window.confirm('Publish the products, toppings, reviews and settings saved on this phone to all devices? Existing local order history stays on this phone.')) save(async () => {
+                    await database.importLegacy();
+                    loadedSettings.current = null; loadAdminData();
+                    alert('Your store is now shared across devices.');
+                  });
+                }}>Import this phone’s store</button>
+              </div>}
+              <form onSubmit={handleSaveSettings} className="checkout-form">
               <h3 style={{ fontSize: '18px', borderBottom: '1px solid var(--color-gray-light)', paddingBottom: '8px', marginBottom: '16px' }}>
                 WhatsApp Contacts
               </h3>

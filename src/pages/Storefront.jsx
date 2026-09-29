@@ -41,14 +41,6 @@ const DELIVERY_LOCATIONS = [
   { name: 'Nkwoegwu', fee: 3500 }
 ];
 
-// Prebuilt parfait extra toppings
-const PREBUILT_EXTRAS = [
-  { id: 'granola', name: 'Granola', price: 500 },
-  { id: 'coconut', name: 'Coconut shaving', price: 500 },
-  { id: 'cashew', name: 'Cashew', price: 700 },
-  { id: 'grape', name: 'Grape', price: 500 }
-];
-
 function Confetti({ active }) {
   const canvasRef = useRef(null);
   
@@ -120,6 +112,8 @@ function Confetti({ active }) {
 
 export default function Storefront({ onNavigateToAdmin }) {
   const [products, setProducts] = useState([]);
+  const [toppings, setToppings] = useState([]);
+  const availableExtras = toppings.filter(topping => topping.inStock);
   const [activeCategory, setActiveCategory] = useState('all');
   const [cart, setCart] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -178,6 +172,7 @@ export default function Storefront({ onNavigateToAdmin }) {
 
   const loadData = () => {
     setProducts(database.getProducts());
+    setToppings(database.getToppings());
     setIsStoreOpen(database.isStoreOpen());
     setSettings(database.getSettings());
     setHoursDisplay(database.getHoursDisplay());
@@ -274,7 +269,7 @@ export default function Storefront({ onNavigateToAdmin }) {
       // Calculate extras
       if (config.extraToppings && config.extraToppings.length > 0) {
         config.extraToppings.forEach(topId => {
-          const toppingObj = PREBUILT_EXTRAS.find(t => t.id === topId);
+          const toppingObj = availableExtras.find(t => t.id === topId);
           if (toppingObj) {
             itemPrice += toppingObj.price;
             itemOptions.push(`+Extra ${toppingObj.name}`);
@@ -390,9 +385,12 @@ export default function Storefront({ onNavigateToAdmin }) {
   const cartTotal = cartSubtotal + deliveryFee;
 
   // Submit checkout order
-  const handleCheckoutSubmit = (e) => {
+  const [checkoutSaving, setCheckoutSaving] = useState(false);
+  const handleCheckoutSubmit = async (e) => {
     e.preventDefault();
-    if (cart.length === 0) return;
+    if (cart.length === 0 || checkoutSaving) return;
+    setCheckoutSaving(true);
+    try {
 
     const orderData = {
       customerName,
@@ -407,12 +405,14 @@ export default function Storefront({ onNavigateToAdmin }) {
       receiptImage: receiptBase64 // uploaded screenshot
     };
 
-    const savedOrder = database.createOrder(orderData);
+    const savedOrder = await database.createOrder(orderData);
     setSubmittedOrder(savedOrder);
     setCart([]); // Clear cart
     setReceiptBase64(''); // Reset uploader
     setIsCheckoutOpen(false);
     setIsSuccessOpen(true);
+    } catch (error) { alert(error.message); }
+    finally { setCheckoutSaving(false); }
   };
 
   // Open live tracker page
@@ -721,7 +721,7 @@ export default function Storefront({ onNavigateToAdmin }) {
                     displayPrice = config.base === 'greek' ? product.priceGreek : product.priceRegular;
                     if (config.extraToppings && config.extraToppings.length > 0) {
                       config.extraToppings.forEach(topId => {
-                        const toppingObj = PREBUILT_EXTRAS.find(t => t.id === topId);
+                        const toppingObj = availableExtras.find(t => t.id === topId);
                         if (toppingObj) displayPrice += toppingObj.price;
                       });
                     }
@@ -770,7 +770,7 @@ export default function Storefront({ onNavigateToAdmin }) {
                             {/* Extra Toppings check section */}
                             <div className="price-label" style={{ marginBottom: '6px' }}>Add Extra Toppings</div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-                              {PREBUILT_EXTRAS.map(extra => {
+                              {availableExtras.map(extra => {
                                 const isChecked = config.extraToppings.includes(extra.id);
                                 return (
                                   <label 
@@ -1299,7 +1299,7 @@ export default function Storefront({ onNavigateToAdmin }) {
                 <button 
                   type="submit" 
                   className="btn btn-primary" 
-                  disabled={uploadingReceipt}
+                  disabled={uploadingReceipt || checkoutSaving}
                   style={{ width: '100%', padding: '14px', marginTop: '10px' }}
                 >
                   Submit Order (₦{cartTotal.toLocaleString()})
