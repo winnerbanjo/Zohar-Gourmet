@@ -41,7 +41,8 @@ module.exports = async (req, res) => {
     if (req.method === 'PUT') {
       const order = req.body && req.body.order;
       if (!id || !order) return res.status(400).json({ error: 'id and order required' });
-      await db.query('UPDATE orders SET data = $2 WHERE id = $1', [id, JSON.stringify(order)]);
+      // Merge so concurrent field updates never clobber each other
+      await db.query('UPDATE orders SET data = data || $2 WHERE id = $1', [id, JSON.stringify(order)]);
       return res.status(200).json({ ok: true });
     }
 

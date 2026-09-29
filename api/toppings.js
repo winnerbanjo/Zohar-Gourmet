@@ -34,7 +34,8 @@ module.exports = async (req, res) => {
     if (req.method === 'PUT') {
       const topping = req.body && req.body.topping;
       if (!id || !topping) return res.status(400).json({ error: 'id and topping required' });
-      await db.query('UPDATE toppings SET data = $2, updated_at = now() WHERE id = $1', [
+      // Merge (||) so partial updates keep untouched fields like inStock
+      await db.query('UPDATE toppings SET data = data || $2, updated_at = now() WHERE id = $1', [
         id,
         JSON.stringify(topping)
       ]);

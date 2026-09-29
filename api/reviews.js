@@ -38,7 +38,8 @@ module.exports = async (req, res) => {
     if (req.method === 'PUT') {
       const review = req.body && req.body.review;
       if (!id || !review) return res.status(400).json({ error: 'id and review required' });
-      await db.query('UPDATE reviews SET data = $2, updated_at = now() WHERE id = $1', [
+      // Merge (||) for consistency with partial-update semantics
+      await db.query('UPDATE reviews SET data = data || $2, updated_at = now() WHERE id = $1', [
         id,
         JSON.stringify(review)
       ]);

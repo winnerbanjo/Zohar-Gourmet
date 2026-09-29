@@ -15,8 +15,9 @@ module.exports = async (req, res) => {
         const { rows } = await db.query(`SELECT COALESCE(MAX(${col}), 0) AS t FROM ${table}`);
         const t = rows[0].t;
         return t ? new Date(t).getTime() : 0;
-      } catch {
-        return 0;
+      } catch (stampErr) {
+        console.error(`changes: stamp query failed for ${table}:`, stampErr.message);
+        throw stampErr;
       }
     };
 
@@ -26,6 +27,9 @@ module.exports = async (req, res) => {
       stamp('reviews'),
       stamp('orders')
     ]);
+
+    // Debuggability: surface stamp errors instead of silently reporting 0.
+    // (A failed stamp used to return 0 forever, so devices never detected changes.)
 
     // settings has no updated_at column; version lives inside the JSON
     const { rows: settingsRows } = await db.query("SELECT data FROM settings WHERE id = 'store'");
