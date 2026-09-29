@@ -24,14 +24,14 @@ export default function Customizer({ onAddToCart, onClose }) {
 
   // Load toppings and set initial portions
   useEffect(() => {
-    const list = database.getToppings();
-    setToppingsList(list);
-    
-    const initialPortions = {};
-    list.forEach(t => {
-      initialPortions[t.id] = 0;
-    });
-    setPortions(initialPortions);
+    const refresh = () => {
+      const list = database.getToppings();
+      setToppingsList(list);
+      setPortions(previous => Object.fromEntries(list.map(t => [t.id, t.inStock ? (previous[t.id] || 0) : 0])));
+    };
+    refresh();
+    window.addEventListener('zohar-db-update', refresh);
+    return () => window.removeEventListener('zohar-db-update', refresh);
   }, []);
 
   const playPopSound = () => {
