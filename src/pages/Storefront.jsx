@@ -182,32 +182,23 @@ export default function Storefront({ onNavigateToAdmin }) {
     setSettings(database.getSettings());
     setHoursDisplay(database.getHoursDisplay());
     setReviews(database.getReviews().filter(r => r.isApproved));
-
-    // If active order tracker is open, reload it live!
-    if (trackingOrderId) {
-      const ordersList = database.getOrders();
-      const match = ordersList.find(o => o.id === trackingOrderId);
-      if (match) {
-        setActiveTrackerOrder(match);
-      }
-    }
   };
 
   useEffect(() => {
     loadData();
 
-    const handleUpdate = () => {
-      loadData();
-    };
-
+    // Live refresh: same-tab writes, other tabs, AND other devices (cloud sync)
+    const unsubscribe = database.subscribe(loadData);
+    const handleUpdate = () => loadData();
     window.addEventListener('zohar-db-update', handleUpdate);
     window.addEventListener('storage', handleUpdate);
 
     return () => {
+      unsubscribe();
       window.removeEventListener('zohar-db-update', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
     };
-  }, [trackingOrderId]);
+  }, []);
 
   // Set card configurations
   useEffect(() => {
@@ -390,7 +381,7 @@ export default function Storefront({ onNavigateToAdmin }) {
   const cartTotal = cartSubtotal + deliveryFee;
 
   // Submit checkout order
-  const handleCheckoutSubmit = (e) => {
+  const handleCheckoutSubmit = async (e) => {
     e.preventDefault();
     if (cart.length === 0) return;
 
@@ -407,24 +398,29 @@ export default function Storefront({ onNavigateToAdmin }) {
       receiptImage: receiptBase64 // uploaded screenshot
     };
 
-    const savedOrder = database.createOrder(orderData);
-    setSubmittedOrder(savedOrder);
-    setCart([]); // Clear cart
-    setReceiptBase64(''); // Reset uploader
-    setIsCheckoutOpen(false);
-    setIsSuccessOpen(true);
+    try {
+      const savedOrder = await database.createOrder(orderData);
+      setSubmittedOrder(savedOrder);
+      setCart([]); // Clear cart
+      setReceiptBase64(''); // Reset uploader
+      setIsCheckoutOpen(false);
+      setIsSuccessOpen(true);
+    } catch (err) {
+      console.error('Order failed to reach the cloud', err);
+      alert('Could not submit your order. Please check your internet connection and try again.');
+    }
   };
 
-  // Open live tracker page
-  const handleOpenLiveTracker = (orderId) => {
+  // Open live tracker page (looks up the cloud so any device can track)
+  const handleOpenLiveTracker = async (orderId) => {
     playPopSound();
     setTrackingOrderId(orderId);
-    const ordersList = database.getOrders();
-    const match = ordersList.find(o => o.id === orderId);
+    const match = await database.getOrderById(orderId);
     if (match) {
       setActiveTrackerOrder(match);
       setSearchError('');
     } else {
+      setActiveTrackerOrder(null);
       setSearchError('Order ID not found. Check and try again!');
     }
   };

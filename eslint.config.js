@@ -18,4 +18,11 @@ export default defineConfig([
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
   },
+  {
+    // Serverless API code runs in Node (CommonJS)
+    files: ['api/**/*.js'],
+    languageOptions: {
+      globals: { ...globals.node },
+    },
+  },
 ])

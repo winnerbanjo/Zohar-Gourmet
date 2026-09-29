@@ -24,14 +24,22 @@ export default function Customizer({ onAddToCart, onClose }) {
 
   // Load toppings and set initial portions
   useEffect(() => {
-    const list = database.getToppings();
-    setToppingsList(list);
-    
-    const initialPortions = {};
-    list.forEach(t => {
-      initialPortions[t.id] = 0;
-    });
-    setPortions(initialPortions);
+    const loadToppings = () => {
+      const list = database.getToppings();
+      setToppingsList(list);
+      
+      setPortions(prev => {
+        const next = { ...prev };
+        list.forEach(t => {
+          if (!(t.id in next)) next[t.id] = 0;
+        });
+        return next;
+      });
+    };
+
+    loadToppings();
+    const unsubscribe = database.subscribe(loadToppings);
+    return unsubscribe;
   }, []);
 
   const playPopSound = () => {

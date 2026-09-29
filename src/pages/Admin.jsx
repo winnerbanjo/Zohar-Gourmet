@@ -112,14 +112,14 @@ export default function Admin({ onNavigateToStorefront }) {
   useEffect(() => {
     loadAdminData();
 
-    const handleUpdate = () => {
-      loadAdminData();
-    };
-
+    // Live refresh: same-tab writes, other tabs, AND other devices (cloud sync)
+    const unsubscribe = database.subscribe(loadAdminData);
+    const handleUpdate = () => loadAdminData();
     window.addEventListener('zohar-db-update', handleUpdate);
     window.addEventListener('storage', handleUpdate);
 
     return () => {
+      unsubscribe();
       window.removeEventListener('zohar-db-update', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
     };
@@ -178,19 +178,34 @@ export default function Admin({ onNavigateToStorefront }) {
     sessionStorage.removeItem('zohar_admin_authed');
   };
 
-  const handleUpdateStatus = (orderId, newStatus) => {
-    database.updateOrderStatus(orderId, newStatus);
+  const handleUpdateStatus = async (orderId, newStatus) => {
+    try {
+      await database.updateOrderStatus(orderId, newStatus);
+    } catch (err) {
+      console.error('Status update failed', err);
+      alert('Could not update the order status. Check your connection and try again.');
+    }
   };
 
-  const handleToggleProduct = (id) => {
-    database.toggleProductStock(id);
+  const handleToggleProduct = async (id) => {
+    try {
+      await database.toggleProductStock(id);
+    } catch (err) {
+      console.error('Stock toggle failed', err);
+      alert('Could not update stock. Check your connection and try again.');
+    }
   };
 
-  const handleToggleTopping = (id) => {
-    database.toggleToppingStock(id);
+  const handleToggleTopping = async (id) => {
+    try {
+      await database.toggleToppingStock(id);
+    } catch (err) {
+      console.error('Stock toggle failed', err);
+      alert('Could not update stock. Check your connection and try again.');
+    }
   };
 
-  const handleSaveSettings = (e) => {
+  const handleSaveSettings = async (e) => {
     e.preventDefault();
     const updatedSettings = {
       whatsapp1,
@@ -204,21 +219,36 @@ export default function Admin({ onNavigateToStorefront }) {
         saturday: { start: saturdayStart, end: saturdayEnd }
       }
     };
-    database.saveSettings(updatedSettings);
-    alert('Store configurations saved successfully!');
-  };
-
-  const handleClearOrders = () => {
-    if (window.confirm("Are you sure you want to delete ALL order history? This cannot be undone.")) {
-      database.clearAllOrders();
-      alert("All order history cleared!");
+    try {
+      await database.saveSettings(updatedSettings);
+      alert('Store configurations saved successfully!');
+    } catch (err) {
+      console.error('Settings save failed', err);
+      alert('Could not save settings. Check your connection and try again.');
     }
   };
 
-  const handleResetDatabase = () => {
+  const handleClearOrders = async () => {
+    if (window.confirm("Are you sure you want to delete ALL order history? This cannot be undone.")) {
+      try {
+        await database.clearAllOrders();
+        alert("All order history cleared!");
+      } catch (err) {
+        console.error('Clear orders failed', err);
+        alert('Could not clear orders. Check your connection and try again.');
+      }
+    }
+  };
+
+  const handleResetDatabase = async () => {
     if (window.confirm("Are you sure you want to reset ALL configurations, settings, and stock levels to defaults? This will clear all data.")) {
-      database.resetDatabase();
-      window.location.reload();
+      try {
+        await database.resetDatabase();
+        window.location.reload();
+      } catch (err) {
+        console.error('Reset failed', err);
+        alert('Could not reset the database. Check your connection and try again.');
+      }
     }
   };
 
@@ -254,7 +284,7 @@ export default function Admin({ onNavigateToStorefront }) {
     setIsProductModalOpen(true);
   };
 
-  const handleProductFormSubmit = (e) => {
+  const handleProductFormSubmit = async (e) => {
     e.preventDefault();
     const productData = {
       name: formName,
@@ -270,20 +300,30 @@ export default function Admin({ onNavigateToStorefront }) {
       hasPackOptions: formHasPackOptions
     };
 
-    if (editingProduct) {
-      database.updateProduct({ id: editingProduct.id, ...productData });
-      alert('Product updated successfully!');
-    } else {
-      database.addProduct(productData);
-      alert('Product added successfully!');
+    try {
+      if (editingProduct) {
+        await database.updateProduct({ id: editingProduct.id, ...productData });
+        alert('Product updated successfully!');
+      } else {
+        await database.addProduct(productData);
+        alert('Product added successfully!');
+      }
+      setIsProductModalOpen(false);
+    } catch (err) {
+      console.error('Product save failed', err);
+      alert('Could not save the product. Check your connection and try again.');
     }
-    setIsProductModalOpen(false);
   };
 
-  const handleDeleteProduct = (id) => {
+  const handleDeleteProduct = async (id) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
-      database.deleteProduct(id);
-      alert('Product deleted successfully!');
+      try {
+        await database.deleteProduct(id);
+        alert('Product deleted successfully!');
+      } catch (err) {
+        console.error('Product delete failed', err);
+        alert('Could not delete the product. Check your connection and try again.');
+      }
     }
   };
 
@@ -302,22 +342,32 @@ export default function Admin({ onNavigateToStorefront }) {
     setIsToppingModalOpen(true);
   };
 
-  const handleToppingFormSubmit = (e) => {
+  const handleToppingFormSubmit = async (e) => {
     e.preventDefault();
-    if (editingTopping) {
-      database.updateTopping({ id: editingTopping.id, name: toppingFormName, price: Number(toppingFormPrice) });
-      alert('Topping updated successfully!');
-    } else {
-      database.addTopping({ name: toppingFormName, price: Number(toppingFormPrice) });
-      alert('Topping added successfully!');
+    try {
+      if (editingTopping) {
+        await database.updateTopping({ id: editingTopping.id, name: toppingFormName, price: Number(toppingFormPrice) });
+        alert('Topping updated successfully!');
+      } else {
+        await database.addTopping({ name: toppingFormName, price: Number(toppingFormPrice) });
+        alert('Topping added successfully!');
+      }
+      setIsToppingModalOpen(false);
+    } catch (err) {
+      console.error('Topping save failed', err);
+      alert('Could not save the topping. Check your connection and try again.');
     }
-    setIsToppingModalOpen(false);
   };
 
-  const handleDeleteTopping = (id) => {
+  const handleDeleteTopping = async (id) => {
     if (window.confirm('Are you sure you want to delete this topping?')) {
-      database.deleteTopping(id);
-      alert('Topping deleted successfully!');
+      try {
+        await database.deleteTopping(id);
+        alert('Topping deleted successfully!');
+      } catch (err) {
+        console.error('Topping delete failed', err);
+        alert('Could not delete the topping. Check your connection and try again.');
+      }
     }
   };
 
@@ -329,25 +379,40 @@ export default function Admin({ onNavigateToStorefront }) {
     setIsReviewModalOpen(true);
   };
 
-  const handleReviewFormSubmit = (e) => {
+  const handleReviewFormSubmit = async (e) => {
     e.preventDefault();
-    database.addReview({
-      name: reviewFormName,
-      rating: Number(reviewFormRating),
-      comment: reviewFormComment
-    });
-    alert('Review added successfully!');
-    setIsReviewModalOpen(false);
+    try {
+      await database.addReview({
+        name: reviewFormName,
+        rating: Number(reviewFormRating),
+        comment: reviewFormComment
+      });
+      alert('Review added successfully!');
+      setIsReviewModalOpen(false);
+    } catch (err) {
+      console.error('Review save failed', err);
+      alert('Could not save the review. Check your connection and try again.');
+    }
   };
 
-  const handleToggleReviewApproval = (id) => {
-    database.toggleReviewApproval(id);
+  const handleToggleReviewApproval = async (id) => {
+    try {
+      await database.toggleReviewApproval(id);
+    } catch (err) {
+      console.error('Review approval toggle failed', err);
+      alert('Could not update the review. Check your connection and try again.');
+    }
   };
 
-  const handleDeleteReview = (id) => {
+  const handleDeleteReview = async (id) => {
     if (window.confirm('Are you sure you want to delete this review?')) {
-      database.deleteReview(id);
-      alert('Review deleted!');
+      try {
+        await database.deleteReview(id);
+        alert('Review deleted!');
+      } catch (err) {
+        console.error('Review delete failed', err);
+        alert('Could not delete the review. Check your connection and try again.');
+      }
     }
   };
 
@@ -510,7 +575,7 @@ export default function Admin({ onNavigateToStorefront }) {
           {activeTab === 'orders' && (
             <div style={{ display: 'flex', gap: '10px' }}>
               <span className="badge badge-open" style={{ animation: 'none' }}>
-                <BellRing size={14} /> Live Sync Active
+                <BellRing size={14} /> Cloud Sync Active
               </span>
             </div>
           )}

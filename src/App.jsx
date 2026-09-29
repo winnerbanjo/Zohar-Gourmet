@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import Storefront from './pages/Storefront';
 import Admin from './pages/Admin';
+import { database } from './utils/database';
 
 export default function App() {
   const [view, setView] = useState('storefront'); // 'storefront' or 'admin'
+
+  // Cloud sync engine: keeps every device's data in step with the shared
+  // database (admin edits appear on all phones within seconds).
+  useEffect(() => {
+    database.startSync();
+  }, []);
 
   // Hash-based routing to allow direct URLs and history navigation
   useEffect(() => {
